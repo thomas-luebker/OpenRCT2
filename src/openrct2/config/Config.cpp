@@ -403,6 +403,11 @@ namespace OpenRCT2::Config
             // The OpenRCT2 sequence shows large community parks with hundreds of guests: minutes to load and
             // 1-2 fps on a 68k. The Amiga sequence tours the empty RCT2 beginner scenarios instead.
             model->currentTitleSequencePreset = reader->GetString("current_title_sequence", "Amiga");
+            if (model->currentTitleSequencePreset == "*OPENRCT2")
+            {
+                // A config written by an earlier build carries upstream's default; nobody chose it on a 68k.
+                model->currentTitleSequencePreset = "Amiga";
+            }
 #else
             model->currentTitleSequencePreset = reader->GetString("current_title_sequence", "*OPENRCT2");
 #endif
