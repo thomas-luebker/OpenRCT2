@@ -28,6 +28,7 @@
 #include "actions/GameActionRunner.h"
 #include "audio/Audio.h"
 #include "audio/AudioContext.h"
+#include "platform/AmigaTrace.h"
 #include "config/Config.h"
 #include "core/BackgroundWorker.hpp"
 #include "core/Console.hpp"
@@ -539,6 +540,7 @@ namespace OpenRCT2
             auto currentLanguage = _localisationService->GetCurrentLanguage();
 
             OpenProgress(STR_CHECKING_OBJECT_FILES);
+            AMIGA_TRACE("init: object repository");
             _objectRepository->LoadOrConstruct(currentLanguage);
 
             // Asset packs need to be loaded before any of the objects they may override are.
@@ -553,8 +555,10 @@ namespace OpenRCT2
             }
 
             OpenProgress(STR_LOADING_GENERIC);
+            AMIGA_TRACE("init: audio objects");
             Audio::LoadAudioObjects();
 
+            AMIGA_TRACE("init: track designs");
             OpenProgress(STR_CHECKING_TRACK_DESIGN_FILES);
             _trackDesignRepository->Scan(currentLanguage);
 
@@ -769,7 +773,9 @@ namespace OpenRCT2
                 OpenProgress(asScenario ? STR_LOADING_SCENARIO : STR_LOADING_SAVED_GAME);
                 SetProgress(0, 100, STR_STRING_M_PERCENT);
 
+                AMIGA_TRACE((std::string("park: load ") + path).c_str());
                 auto result = parkImporter->LoadFromStream(stream, info.Type == FileType::scenario, false, path.c_str());
+                AMIGA_TRACE("park: stream read, loading objects");
                 SetProgress(10, 100, STR_STRING_M_PERCENT);
 
                 // From this point onwards the currently loaded park will be corrupted if loading fails
@@ -783,7 +789,9 @@ namespace OpenRCT2
                 MapAnimations::ClearAll();
                 // TODO: Have a separate GameState and exchange once loaded.
                 auto& gameState = ::getGameState();
+                AMIGA_TRACE("park: objects loaded, importing");
                 parkImporter->Import(gameState);
+                AMIGA_TRACE("park: import done");
                 SetProgress(100, 100, STR_STRING_M_PERCENT);
 
                 // Reset viewport rendering inhibition

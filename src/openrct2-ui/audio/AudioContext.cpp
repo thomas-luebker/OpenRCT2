@@ -19,6 +19,7 @@
 #include <openrct2/audio/AudioContext.h>
 #include <openrct2/audio/AudioSource.h>
 #include <openrct2/core/String.hpp>
+#include <openrct2/platform/AmigaTrace.h>
 
 namespace OpenRCT2::Audio
 {
@@ -98,6 +99,7 @@ namespace OpenRCT2::Audio
             // Stream will already be in memory, so convert to target format
             auto& targetFormat = _audioMixer->GetFormat();
             source = source->ToMemory(targetFormat);
+            AMIGA_TRACE(String::stdFormat("audio: CSS sample %u loaded", index).c_str());
 
             return AddSource(std::move(source));
         }
@@ -121,6 +123,7 @@ namespace OpenRCT2::Audio
                     auto& targetFormat = _audioMixer->GetFormat();
                     source = source->ToMemory(targetFormat);
                 }
+                AMIGA_TRACE(String::stdFormat("audio: WAV source %llu bytes%s", static_cast<unsigned long long>(dataLength), dataLength < kStreamMinSize ? " (in memory)" : " (streamed)").c_str());
 
                 return AddSource(std::move(source));
             }

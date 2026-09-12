@@ -1,4 +1,4 @@
-OpenRCT2 for AmigaOS 3.2 (68k) -- tester build 4
+OpenRCT2 for AmigaOS 3.2 (68k) -- tester build 5
 ================================================
 
 This is an early test build of OpenRCT2, the open-source re-implementation of
@@ -71,8 +71,12 @@ Run once with the trace on and send us the file plus your hardware details:
         SetEnv OPENRCT2_TRACE T:openrct2-trace.txt
         Execute OpenRCT2
 The "gfx: 100 frames in ... fps; rasterise ... blit ..." lines show where the
-time goes. "SetEnv OPENRCT2_BLIT chunky" selects the old screen-update path
-for comparison. A smaller screen mode in user/config.ini scales the cost down.
+time goes, and if the game hangs while loading, the last line says where.
+If it hangs while loading, try once with "SetEnv OPENRCT2_NO_AUDIO 1" to
+rule the audio path in or out, and send the trace of the hanging run.
+"SetEnv OPENRCT2_BLIT direct" tries an experimental direct framebuffer write
+(off by default: it hung one PiStorm). A smaller screen mode in
+user/config.ini scales the cost down.
 
 REPORTING PROBLEMS
 ------------------

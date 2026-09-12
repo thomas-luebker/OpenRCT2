@@ -11,6 +11,7 @@
 
 #include "../Cheats.h"
 #include "../Context.h"
+#include "../platform/AmigaTrace.h"
 #include "../Diagnostic.h"
 #include "../Game.h"
 #include "../GameState.h"
@@ -153,9 +154,11 @@ namespace OpenRCT2
         void Import(GameState_t& gameState)
         {
             auto& os = *_os;
+            AMIGA_TRACE("park: tiles chunk");
             ReadWriteTilesChunk(gameState, os);
             ReadWriteBannersChunk(gameState, os);
             ReadWriteRidesChunk(gameState, os);
+            AMIGA_TRACE("park: entities chunk");
             ReadWriteEntitiesChunk(gameState, os);
             ReadWriteScenarioChunk(gameState, os);
             ReadWriteGeneralChunk(gameState, os);

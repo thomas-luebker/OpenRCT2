@@ -1,6 +1,6 @@
 # OpenRCT2 on AmigaOS 3.2 (68k) — tester guide
 
-*Build: test4. This is an early, unfinished port. You are testing it — thank you.*
+*Build: test5. This is an early, unfinished port. You are testing it — thank you.*
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This build is a
 big-endian port of the upstream C++20 engine to 68k AmigaOS, with an Intuition/RTG display
@@ -35,7 +35,7 @@ Example target: `Work:Games/RCT2/`.
 
 1. Extract the archive where there is room, e.g. `Work:Games/`. In a Shell:
    ```
-   LhA x OpenRCT2-0.5.5-test4-*-amiga68k.lha Work:Games/
+   LhA x OpenRCT2-0.5.5-test5-*-amiga68k.lha Work:Games/
    ```
    You get a drawer `OpenRCT2` with an icon.
 2. Tell the game where your RCT2 data is with an **assign** (this is how the launcher finds it):
@@ -88,9 +88,8 @@ Example target: `Work:Games/RCT2/`.
 
 ## 7. If it is slow: send us a performance trace
 
-test4 writes the screen directly into the graphics card's framebuffer (the previous builds went through
-the driver's `WriteChunkyPixels`, which can be very slow on some RTG drivers). If the frame rate is still
-low, please run it once with the trace on and send us the file, it tells us where the time goes:
+If the frame rate is low, please run it once with the trace on and send us the file, it tells us where
+the time goes (and, if the game hangs during loading, where it stopped):
 
 ```
 SetEnv OPENRCT2_TRACE T:openrct2-trace.txt
@@ -100,8 +99,14 @@ Execute OpenRCT2
 Let the title screen run for a minute, quit, and send `T:openrct2-trace.txt` together with your
 hardware (CPU/accelerator, graphics card and driver, screen mode). The lines that matter look like
 `gfx: 100 frames in 4123 ms = 24.25 fps; rasterise 2100 ms, blit 900 ms for 30000 kpx (direct)`.
-To compare the old blit path: `SetEnv OPENRCT2_BLIT chunky` before starting. A smaller screen mode
-(`window_width`/`window_height` in `user/config.ini`) scales the cost down almost linearly.
+If the game hangs while loading (one PiStorm tester saw it stop at "Loading title sequence (30%)" and
+the machine's disk access died with it), please try once with sound disabled to isolate the audio path:
+`SetEnv OPENRCT2_NO_AUDIO 1` before starting. If that loads, the hang is in the audio code; send the
+trace of the hanging run either way.
+
+An experimental direct framebuffer write can be tried with `SetEnv OPENRCT2_BLIT direct` before starting
+(it hung one PiStorm during loading, so it is off by default; tell us what it does on your card). A smaller
+screen mode (`window_width`/`window_height` in `user/config.ini`) scales the cost down almost linearly.
 
 ## 8. Reporting problems
 

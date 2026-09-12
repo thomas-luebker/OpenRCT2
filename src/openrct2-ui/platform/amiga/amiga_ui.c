@@ -179,9 +179,9 @@ void amiga_ui_set_palette(const unsigned char* rgb)
     #define PIXFMT_LUT8 (0UL)
 #endif
 
-/* Blit method: 0 = WriteChunkyPixels() through the RTG driver, 1 = lock the screen bitmap and copy the rows
- * straight into the 8-bit framebuffer (the fast path on real RTG hardware, where the driver's chunky
- * conversion is the cost). Chosen once: env OPENRCT2_BLIT=chunky|lock forces one, else lock is tried first. */
+/* Blit method: 0 = WriteChunkyPixels() through the RTG driver (default), 1 = lock the screen bitmap and copy
+ * the rows straight into the 8-bit framebuffer. The direct path is opt-in (env OPENRCT2_BLIT=direct): a
+ * PiStorm/Emu68 tester saw the game hang during loading with it, so it stays an experiment until measured. */
 static int s_blitMethod = -1;
 
 int amiga_ui_blit_method(void)
@@ -223,9 +223,9 @@ void amiga_ui_blit(const unsigned char* src, int srcPitch, int x, int y, int w, 
     if (s_blitMethod < 0)
     {
         char v[16];
-        s_blitMethod = 1;
+        s_blitMethod = 0;
         if (GetVar((STRPTR) "OPENRCT2_BLIT", (STRPTR)v, sizeof v, 0) > 0)
-            s_blitMethod = (v[0] == 'c' || v[0] == 'C') ? 0 : 1;
+            s_blitMethod = (v[0] == 'd' || v[0] == 'D' || v[0] == 'l' || v[0] == 'L') ? 1 : 0;
     }
     if (s_blitMethod == 1)
     {
