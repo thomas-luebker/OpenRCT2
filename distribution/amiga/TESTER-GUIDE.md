@@ -1,6 +1,6 @@
 # OpenRCT2 on AmigaOS 3.2 (68k) — tester guide
 
-*Build: test6. This is an early, unfinished port. You are testing it — thank you.*
+*Build: test7. This is an early, unfinished port. You are testing it — thank you.*
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This build is a
 big-endian port of the upstream C++20 engine to 68k AmigaOS, with an Intuition/RTG display
@@ -35,7 +35,7 @@ Example target: `Work:Games/RCT2/`.
 
 1. Extract the archive where there is room, e.g. `Work:Games/`. In a Shell:
    ```
-   LhA x OpenRCT2-0.5.5-test6-*-amiga68k.lha Work:Games/
+   LhA x OpenRCT2-0.5.5-test7-*-amiga68k.lha Work:Games/
    ```
    You get a drawer `OpenRCT2` with an icon.
 2. Tell the game where your RCT2 data is with an **assign** (this is how the launcher finds it):
@@ -100,7 +100,9 @@ Let the title screen run for a minute, quit, and send `T:openrct2-trace.txt` tog
 hardware (CPU/accelerator, graphics card and driver, screen mode). The lines that matter look like
 `gfx: 100 frames in 4123 ms = 24.25 fps; rasterise 2100 ms, blit 900 ms for 30000 kpx (chunky)` and
 `frame: per 20 draws: events 40 ms, sleep 0 ms (0 times), ticks 800 ms (80 ticks), input+windows 20 ms, draw 700 ms`
-(where the frame time goes: simulation ticks, drawing, input).
+(where the frame time goes: simulation ticks, drawing, input), plus `tick: per 40 ticks: ...` with the
+cost of each simulation subsystem. The title screen park is the heaviest thing in the game; please also
+report the frame rate inside a freshly started scenario, that is what matters for playing.
 If the game hangs while loading (one PiStorm tester saw it stop at "Loading title sequence (30%)" and
 the machine's disk access died with it), please try once with sound disabled to isolate the audio path:
 `SetEnv OPENRCT2_NO_AUDIO 1` before starting. If that loads, the hang is in the audio code; send the

@@ -20,7 +20,13 @@ namespace OpenRCT2
     // The number of logical update / ticks per second.
     constexpr uint32_t kGameUpdateFPS = 40;
     // The maximum amount of updates in case rendering is slower
+#ifdef __amigaos__
+    // A 68k cannot catch up: several ticks per drawn frame only starve the display. Let the game run
+    // slower than real time instead and keep it responsive.
+    constexpr uint32_t kGameMaxUpdates = 2;
+#else
     constexpr uint32_t kGameMaxUpdates = 4;
+#endif
     // The game update interval in milliseconds, (1000 / 40fps) = 25ms
     constexpr float kGameUpdateTimeMS = 1.0f / kGameUpdateFPS;
     // The maximum threshold to advance.

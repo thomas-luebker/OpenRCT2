@@ -8,6 +8,9 @@
  *****************************************************************************/
 
 #include "GameState.h"
+#include "platform/AmigaTrace.h"
+#include "core/String.hpp"
+#include "platform/Platform.h"
 
 #include "Game.h"
 #include "GameStateSnapshots.h"
@@ -305,23 +308,44 @@ namespace OpenRCT2
         auto day = gameState.date.GetDay();
 #endif
 
+#ifdef __amigaos__
+        // trace-gated tick profile: ms per 40 ticks for the main subsystems
+        static uint32_t tp[10] = {};
+        static uint32_t tpTicks = 0;
+        uint32_t t0 = Platform::GetTicks();
+    #define TP(i)                                                                                                            \
+        do                                                                                                                 \
+        {                                                                                                                  \
+            uint32_t tn = Platform::GetTicks();                                                                            \
+            tp[i] += tn - t0;                                                                                              \
+            t0 = tn;                                                                                                       \
+        } while (0)
+#else
+    #define TP(i) ((void)0)
+#endif
         DateUpdate(gameState);
 
         ScenarioUpdate(gameState);
         Weather::update();
         MapUpdateTiles();
+        TP(0);
 
         // Temporarily remove provisional paths to prevent peep from interacting with them
         auto removeProvisionalIntent = Intent(INTENT_ACTION_REMOVE_PROVISIONAL_ELEMENTS);
         ContextBroadcastIntent(&removeProvisionalIntent);
 
         MapUpdatePathWideFlags();
+        TP(1);
         PeepUpdateAll();
+        TP(2);
         auto restoreProvisionalIntent = Intent(INTENT_ACTION_RESTORE_PROVISIONAL_ELEMENTS);
         ContextBroadcastIntent(&restoreProvisionalIntent);
         VehicleUpdateAll();
+        TP(3);
         gameState.entities.updateAllMiscEntities();
+        TP(4);
         Ride::updateAll();
+        TP(5);
 
         if (!isInEditorMode())
         {
@@ -333,11 +357,27 @@ namespace OpenRCT2
         RideRating::UpdateAll();
         RideMeasurementsUpdate();
         News::UpdateCurrentItem();
+        TP(6);
 
         MapAnimations::InvalidateAndUpdateAll();
+        TP(7);
         VehicleSoundsUpdate();
         PeepUpdateCrowdNoise();
         Weather::updateSound();
+        TP(8);
+#ifdef __amigaos__
+        if (++tpTicks % 40 == 0)
+        {
+            AMIGA_TRACE(String::stdFormat(
+                            "tick: per 40 ticks: date/scenario/weather/tiles %u, pathflags %u, peeps %u, vehicles %u, misc %u, rides %u, "
+                            "park/research/ratings %u, animations %u, sounds %u ms",
+                            tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6], tp[7], tp[8])
+                            .c_str());
+            for (auto& v : tp)
+                v = 0;
+        }
+#endif
+#undef TP
 
         EditorScene::OpenWindowsForCurrentStep();
 
