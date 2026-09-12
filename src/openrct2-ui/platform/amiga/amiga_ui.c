@@ -169,12 +169,70 @@ void amiga_ui_set_palette(const unsigned char* rgb)
     LoadRGB32(&s_screen->ViewPort, s_palette);
 }
 
+/* CyberGraphX LockBitMapTags() tags; bebbo's trimmed cybergraphics.h lacks them. */
+#ifndef LBMI_PIXFMT
+    #define LBMI_PIXFMT (0x84001004)
+    #define LBMI_BYTESPERROW (0x84001006)
+    #define LBMI_BASEADDRESS (0x84001007)
+#endif
+#ifndef PIXFMT_LUT8
+    #define PIXFMT_LUT8 (0UL)
+#endif
+
+/* Blit method: 0 = WriteChunkyPixels() through the RTG driver, 1 = lock the screen bitmap and copy the rows
+ * straight into the 8-bit framebuffer (the fast path on real RTG hardware, where the driver's chunky
+ * conversion is the cost). Chosen once: env OPENRCT2_BLIT=chunky|lock forces one, else lock is tried first. */
+static int s_blitMethod = -1;
+
+int amiga_ui_blit_method(void)
+{
+    return s_blitMethod;
+}
+
+static int lock_blit(const unsigned char* src, int srcPitch, int x, int y, int w, int h)
+{
+    APTR handle;
+    ULONG fmt = ~0UL, bpr = 0;
+    UBYTE* base = NULL;
+    int row;
+    handle = LockBitMapTags(s_screen->RastPort.BitMap, LBMI_PIXFMT, (ULONG)&fmt, LBMI_BYTESPERROW, (ULONG)&bpr, LBMI_BASEADDRESS, (ULONG)&base, TAG_DONE);
+    if (handle == NULL)
+        return 0;
+    if (fmt != PIXFMT_LUT8 || base == NULL || bpr == 0)
+    {
+        UnLockBitMap(handle);
+        return 0;
+    }
+    base += (ULONG)y * bpr + (ULONG)x;
+    for (row = 0; row < h; row++)
+    {
+        memcpy(base, src, (size_t)w);
+        base += bpr;
+        src += srcPitch;
+    }
+    UnLockBitMap(handle);
+    return 1;
+}
+
 void amiga_ui_blit(const unsigned char* src, int srcPitch, int x, int y, int w, int h)
 {
     if (s_window == NULL || w <= 0 || h <= 0)
         return;
     if (x < 0 || y < 0 || x + w > s_width || y + h > s_height)
         return;
+    if (s_blitMethod < 0)
+    {
+        char v[16];
+        s_blitMethod = 1;
+        if (GetVar((STRPTR) "OPENRCT2_BLIT", (STRPTR)v, sizeof v, 0) > 0)
+            s_blitMethod = (v[0] == 'c' || v[0] == 'C') ? 0 : 1;
+    }
+    if (s_blitMethod == 1)
+    {
+        if (lock_blit(src, srcPitch, x, y, w, h))
+            return;
+        s_blitMethod = 0; /* bitmap not lockable as 8-bit chunky: fall back for good */
+    }
     WriteChunkyPixels(s_window->RPort, x, y, x + w - 1, y + h - 1, (UBYTE*)src, srcPitch);
 }
 

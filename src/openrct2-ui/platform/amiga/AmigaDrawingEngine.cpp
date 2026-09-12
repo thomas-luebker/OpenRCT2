@@ -29,6 +29,9 @@ private:
     IUiContext& _uiContext;
     // Union of the dirty blocks drawn this frame; only this region is pushed to the RTG screen.
     int32_t _dbX0 = 0, _dbY0 = 0, _dbX1 = 0, _dbY1 = 0;
+    // frame timing for the trace: rasterise (BeginDraw..blit), blit, pixels blitted
+    unsigned _tBegin = 0, _msRaster = 0, _msBlit = 0;
+    unsigned long _pxBlit = 0;
     void resetDirtyBox()
     {
         _dbX0 = _dbY0 = 0x7FFFFFFF;
@@ -73,6 +76,7 @@ public:
     {
         AMIGA_TRACE_ONCE("gfx: first BeginDraw");
         resetDirtyBox();
+        _tBegin = amiga_ticks_ms();
         X8DrawingEngine::BeginDraw();
     }
 
@@ -94,7 +98,11 @@ public:
             if (x1 > x0 && y1 > y0)
             {
                 const uint8_t* src = reinterpret_cast<const uint8_t*>(_bits) + static_cast<size_t>(y0) * _pitch + x0;
+                unsigned tb = amiga_ticks_ms();
+                _msRaster += tb - _tBegin;
                 amiga_ui_blit(src, static_cast<int>(_pitch), x0, y0, x1 - x0, y1 - y0);
+                _msBlit += amiga_ticks_ms() - tb;
+                _pxBlit += static_cast<unsigned long>(x1 - x0) * static_cast<unsigned long>(y1 - y0);
             }
         }
         resetDirtyBox();
@@ -108,11 +116,14 @@ public:
             unsigned dt = now - t0;
             AMIGA_TRACE(
                 String::stdFormat(
-                    "gfx: %u frames in %u ms = %u.%02u fps", frames, dt, dt ? frames * 1000u / dt : 0u,
-                    dt ? (frames * 100000u / dt) % 100u : 0u)
+                    "gfx: %u frames in %u ms = %u.%02u fps; rasterise %u ms, blit %u ms for %lu kpx (%s)", frames, dt,
+                    dt ? frames * 1000u / dt : 0u, dt ? (frames * 100000u / dt) % 100u : 0u, _msRaster, _msBlit, _pxBlit / 1000ul,
+                    amiga_ui_blit_method() == 1 ? "direct" : "chunky")
                     .c_str());
             frames = 0;
             t0 = now;
+            _msRaster = _msBlit = 0;
+            _pxBlit = 0;
         }
     }
 

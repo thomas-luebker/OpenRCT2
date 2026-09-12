@@ -1,4 +1,4 @@
-OpenRCT2 for AmigaOS 3.2 (68k) -- tester build 3
+OpenRCT2 for AmigaOS 3.2 (68k) -- tester build 4
 ================================================
 
 This is an early test build of OpenRCT2, the open-source re-implementation of
@@ -64,6 +64,15 @@ KNOWN LIMITATIONS OF THIS BUILD
    (1280x720 runs at ~9 fps on an emulated 68040).
  * Saving games has had little testing. Save often, expect surprises.
  * Multiplayer, plugins and the scenario editor are untested.
+
+IF IT IS SLOW
+-------------
+Run once with the trace on and send us the file plus your hardware details:
+        SetEnv OPENRCT2_TRACE T:openrct2-trace.txt
+        Execute OpenRCT2
+The "gfx: 100 frames in ... fps; rasterise ... blit ..." lines show where the
+time goes. "SetEnv OPENRCT2_BLIT chunky" selects the old screen-update path
+for comparison. A smaller screen mode in user/config.ini scales the cost down.
 
 REPORTING PROBLEMS
 ------------------

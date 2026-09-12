@@ -1,6 +1,6 @@
 # OpenRCT2 on AmigaOS 3.2 (68k) — tester guide
 
-*Build: test3. This is an early, unfinished port. You are testing it — thank you.*
+*Build: test4. This is an early, unfinished port. You are testing it — thank you.*
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This build is a
 big-endian port of the upstream C++20 engine to 68k AmigaOS, with an Intuition/RTG display
@@ -35,7 +35,7 @@ Example target: `Work:Games/RCT2/`.
 
 1. Extract the archive where there is room, e.g. `Work:Games/`. In a Shell:
    ```
-   LhA x OpenRCT2-0.5.5-test3-*-amiga68k.lha Work:Games/
+   LhA x OpenRCT2-0.5.5-test4-*-amiga68k.lha Work:Games/
    ```
    You get a drawer `OpenRCT2` with an icon.
 2. Tell the game where your RCT2 data is with an **assign** (this is how the launcher finds it):
@@ -86,7 +86,24 @@ Example target: `Work:Games/RCT2/`.
 - The park load is CPU-bound (object loading, tile import); a real 68060 or PiStorm will be
   faster than the emulated 68040 the numbers above come from.
 
-## 7. Reporting problems
+## 7. If it is slow: send us a performance trace
+
+test4 writes the screen directly into the graphics card's framebuffer (the previous builds went through
+the driver's `WriteChunkyPixels`, which can be very slow on some RTG drivers). If the frame rate is still
+low, please run it once with the trace on and send us the file, it tells us where the time goes:
+
+```
+SetEnv OPENRCT2_TRACE T:openrct2-trace.txt
+Execute OpenRCT2
+```
+
+Let the title screen run for a minute, quit, and send `T:openrct2-trace.txt` together with your
+hardware (CPU/accelerator, graphics card and driver, screen mode). The lines that matter look like
+`gfx: 100 frames in 4123 ms = 24.25 fps; rasterise 2100 ms, blit 900 ms for 30000 kpx (direct)`.
+To compare the old blit path: `SetEnv OPENRCT2_BLIT chunky` before starting. A smaller screen mode
+(`window_width`/`window_height` in `user/config.ini`) scales the cost down almost linearly.
+
+## 8. Reporting problems
 
 Send: your machine (CPU, RAM, graphics card and driver, OS version), what you did, what you
 expected, what happened, and a screenshot if you can.
@@ -104,7 +121,7 @@ Reproduce the problem, then send `T:openrct2-trace.txt`. Switch it off again aft
 UnSetEnv OPENRCT2_TRACE
 ```
 
-## 8. Uninstall
+## 9. Uninstall
 
 Delete the `OpenRCT2` drawer and remove the `Assign RCT2:` line from `S:User-Startup`.
 Nothing is written outside the drawer.
