@@ -229,8 +229,14 @@ private:
                 if (header.HeaderSize == sizeof(FileIndexHeader) && header.MagicNumber == _magicNumber
                     && header.VersionA == kFileIndexVersion && header.VersionB == _version && header.LanguageId == language
                     && header.Stats.TotalFiles == stats.TotalFiles && header.Stats.TotalFileSize == stats.TotalFileSize
+#ifdef __amigaos__
+                    // Unpacking a new build's archive over an install stamps every object file with a new date and
+                    // forced the slow first-start scan again; count, size and path checksums still catch real changes.
+                    && header.Stats.PathChecksum == stats.PathChecksum)
+#else
                     && header.Stats.FileDateModifiedChecksum == stats.FileDateModifiedChecksum
                     && header.Stats.PathChecksum == stats.PathChecksum)
+#endif
                 {
                     items.reserve(header.NumItems);
                     OpenRCT2::DataSerialiser ds(false, fs);

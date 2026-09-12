@@ -898,7 +898,16 @@ private:
             if (mode.w > 0 && mode.h > 0)
             {
                 float aspectRatio = static_cast<float>(mode.w) / mode.h;
-                if (std::fabs(desktopAspectRatio - aspectRatio) < 0.1f)
+#ifdef __amigaos__
+                // An RTG fullscreen mode is a real mode switch on its own screen, so a 4:3 mode is fine on a
+                // 16:9 Workbench; the aspect filter would hide 640x480 and 800x600 behind a wide desktop.
+                const bool aspectOk = true;
+                (void)aspectRatio;
+                (void)desktopAspectRatio;
+#else
+                const bool aspectOk = std::fabs(desktopAspectRatio - aspectRatio) < 0.1f;
+#endif
+                if (aspectOk)
                 {
                     resolutions.push_back({ mode.w, mode.h });
                 }
@@ -922,8 +931,23 @@ private:
         if (!resolutions.empty()
             && (Config::Get().general.fullscreenWidth == -1 || Config::Get().general.fullscreenHeight == -1))
         {
+#ifdef __amigaos__
+            // Every pixel costs on a 68k: default to the smallest mode that fits the game's 640x480 minimum.
+            Resolution pick = resolutions.front();
+            for (const auto& r : resolutions)
+            {
+                if (r.Width >= 640 && r.Height >= 480)
+                {
+                    pick = r;
+                    break;
+                }
+            }
+            Config::Get().general.fullscreenWidth = pick.Width;
+            Config::Get().general.fullscreenHeight = pick.Height;
+#else
             Config::Get().general.fullscreenWidth = resolutions.back().Width;
             Config::Get().general.fullscreenHeight = resolutions.back().Height;
+#endif
         }
 
         _fsResolutions = resolutions;

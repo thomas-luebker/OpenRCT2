@@ -55,6 +55,8 @@ int amiga_ui_request(const char* title, const char* body, const char* gadgets);
 
 /* 1 if an 8-bit RTG mode of that size exists. */
 int amiga_ui_mode_available(int width, int height);
+/* Distinct 8-bit RTG mode sizes; returns how many were stored (at most max). */
+int amiga_ui_list_modes(int* widths, int* heights, int max);
 /* Workbench (default public screen) size. */
 int amiga_ui_desktop_size(int* width, int* height);
 

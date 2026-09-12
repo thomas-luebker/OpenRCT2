@@ -1,6 +1,6 @@
 # OpenRCT2 on AmigaOS 3.2 (68k) — tester guide
 
-*Build: test7. This is an early, unfinished port. You are testing it — thank you.*
+*Build: test8. This is an early, unfinished port. You are testing it — thank you.*
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This build is a
 big-endian port of the upstream C++20 engine to 68k AmigaOS, with an Intuition/RTG display
@@ -38,6 +38,11 @@ Example target: `Work:Games/RCT2/`.
    LhA x OpenRCT2-0.5.5-test7-*-amiga68k.lha Work:Games/
    ```
    You get a drawer `OpenRCT2` with an icon.
+
+   **Updating from an earlier test build:** use the small `...-update.lha` instead. It contains only
+   the program, the launcher and the docs. Extract it over your existing `OpenRCT2` drawer; your
+   `user/config.ini` and the caches in `user/` stay, so no settings are lost and the slow first
+   start is not repeated.
 2. Tell the game where your RCT2 data is with an **assign** (this is how the launcher finds it):
    ```
    Assign RCT2: Work:Games/RCT2

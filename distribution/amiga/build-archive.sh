@@ -33,4 +33,16 @@ find "$STAGE" -name .DS_Store -delete
 rm -f "$OUT/$NAME.lha"
 "$LHACLI" lha create "$OUT/$NAME.lha" "$STAGE"
 ls -la "$OUT/$NAME.lha"; du -sh "$STAGE"
+# Update archive: the program, launcher, docs and VERSION only. Testers unpack it over an existing install and
+# keep their config.ini and the caches in user/ (no slow first start, no lost settings).
+UPD="$OUT/stage-update"
+rm -rf "$UPD"; mkdir -p "$UPD/OpenRCT2/bin"
+cp "$BIN" "$UPD/OpenRCT2/bin/openrct2"
+cp "$HERE/OpenRCT2" "$UPD/OpenRCT2/OpenRCT2"
+cp "$HERE/OpenRCT2-launcher.info" "$UPD/OpenRCT2/OpenRCT2.info"
+cp "$HERE/README.txt" "$HERE/README.txt.info" "$STAGE/OpenRCT2/VERSION" "$UPD/OpenRCT2/"
+rm -f "$OUT/$NAME-update.lha"
+"$LHACLI" lha create "$OUT/$NAME-update.lha" "$UPD"
+ls -la "$OUT/$NAME-update.lha"
 echo "$OUT/$NAME.lha"
+echo "$OUT/$NAME-update.lha"

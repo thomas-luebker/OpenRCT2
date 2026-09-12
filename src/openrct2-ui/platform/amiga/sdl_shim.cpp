@@ -540,23 +540,43 @@ int SDL_GetRendererOutputSize(SDL_Renderer*, int*, int*)
     return -1;
 }
 
-static const int kModes[][2] = { { 640, 480 },   { 800, 600 },  { 1024, 768 }, { 1280, 720 },
-                                 { 1280, 1024 }, { 1600, 900 }, { 1920, 1080 } };
+// Fullscreen mode list: what the RTG driver actually offers at 8 bits (not a fixed table, so a card whose
+// smallest mode is 640x400 or 720x576 still gets every size it has). Enumerated once.
+static constexpr int kMaxModes = 64;
+static int g_modeW[kMaxModes], g_modeH[kMaxModes];
+static int g_numModes = -1;
+static void EnumerateModes()
+{
+    if (g_numModes >= 0)
+        return;
+    g_numModes = amiga_ui_list_modes(g_modeW, g_modeH, kMaxModes);
+    if (g_numModes == 0)
+    {
+        // No RTG driver answered (e.g. the mode list is queried before the screen exists): offer the classics
+        // and let the open fall back to the nearest larger mode.
+        static const int kFallback[][2] = { { 640, 480 }, { 800, 600 }, { 1024, 768 }, { 1280, 720 }, { 1280, 1024 } };
+        for (const auto& m : kFallback)
+        {
+            g_modeW[g_numModes] = m[0];
+            g_modeH[g_numModes] = m[1];
+            g_numModes++;
+        }
+    }
+}
 
 int SDL_GetNumDisplayModes(int)
 {
-    return static_cast<int>(sizeof(kModes) / sizeof(kModes[0]));
+    EnumerateModes();
+    return g_numModes;
 }
 int SDL_GetDisplayMode(int, int modeIndex, SDL_DisplayMode* mode)
 {
-    if (modeIndex < 0 || modeIndex >= SDL_GetNumDisplayModes(0))
+    EnumerateModes();
+    if (modeIndex < 0 || modeIndex >= g_numModes)
         return -1;
     *mode = {};
-    if (amiga_ui_mode_available(kModes[modeIndex][0], kModes[modeIndex][1]))
-    {
-        mode->w = kModes[modeIndex][0];
-        mode->h = kModes[modeIndex][1];
-    }
+    mode->w = g_modeW[modeIndex];
+    mode->h = g_modeH[modeIndex];
     return 0;
 }
 int SDL_GetDesktopDisplayMode(int, SDL_DisplayMode* mode)

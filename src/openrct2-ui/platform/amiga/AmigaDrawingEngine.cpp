@@ -127,6 +127,26 @@ public:
         }
     }
 
+    // A viewport scroll moves the already-drawn pixels inside the framebuffer and only the exposed strips are
+    // drawn as dirty blocks. Since this engine pushes just the dirty union to the screen, the moved pixels have to
+    // join that union or the screen scrolls in pieces (tester report: "scrollt nur so Teile vom Bildschirm").
+    void CopyRect(int32_t x, int32_t y, int32_t width, int32_t height, int32_t dx, int32_t dy) override
+    {
+        if (dx == 0 && dy == 0)
+            return;
+        X8DrawingEngine::CopyRect(x, y, width, height, dx, dy);
+        int32_t x0 = std::max<int32_t>(0, std::min(x, x - dx));
+        int32_t y0 = std::max<int32_t>(0, std::min(y, y - dy));
+        int32_t x1 = std::min<int32_t>(static_cast<int32_t>(_width), std::max(x, x - dx) + width);
+        int32_t y1 = std::min<int32_t>(static_cast<int32_t>(_height), std::max(y, y - dy) + height);
+        if (x1 <= x0 || y1 <= y0)
+            return;
+        _dbX0 = std::min(_dbX0, x0);
+        _dbY0 = std::min(_dbY0, y0);
+        _dbX1 = std::max(_dbX1, x1);
+        _dbY1 = std::max(_dbY1, y1);
+    }
+
 protected:
     void OnDrawDirtyBlock(int32_t left, int32_t top, int32_t right, int32_t bottom) override
     {

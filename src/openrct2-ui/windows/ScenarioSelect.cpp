@@ -59,7 +59,12 @@ namespace OpenRCT2::Ui::Windows
     static constexpr int32_t kTabsStart = kWidgetsStart;
     static constexpr int32_t kTabWidth = 92;
     static constexpr int32_t kTrueFontSize = 24;
+#ifdef __amigaos__
+    // 640x480 is the common RTG screen on the Amiga; the stock 734-wide window would lose its preview pane off the right edge.
+    static constexpr ScreenSize kWindowSize = { 636, 384 };
+#else
     static constexpr ScreenSize kWindowSize = { 734, 384 };
+#endif
     static constexpr StringId kWindowTitle = STR_SELECT_SCENARIO;
 
     enum class ListItemType : uint8_t

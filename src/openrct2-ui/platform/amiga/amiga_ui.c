@@ -76,6 +76,38 @@ static ULONG find_mode(int width, int height)
     return best != (ULONG)INVALID_ID ? best : largest;
 }
 
+/* Every distinct width x height the RTG driver offers at 8 bits, largest first. Returns the count. */
+int amiga_ui_list_modes(int* widths, int* heights, int max)
+{
+    ULONG id = INVALID_ID;
+    int n = 0;
+    if (!open_libs() || max <= 0)
+        return 0;
+    while ((id = NextDisplayInfo(id)) != (ULONG)INVALID_ID)
+    {
+        int w, h, i;
+        if (!IsCyberModeID(id) || GetCyberIDAttr(CYBRIDATTR_DEPTH, id) != 8)
+            continue;
+        w = (int)GetCyberIDAttr(CYBRIDATTR_WIDTH, id);
+        h = (int)GetCyberIDAttr(CYBRIDATTR_HEIGHT, id);
+        if (w < 640 || h < 480) /* the game cannot lay out its windows below 640x480 */
+            continue;
+        for (i = 0; i < n; i++)
+            if (widths[i] == w && heights[i] == h)
+                break;
+        if (i < n)
+            continue;
+        if (n < max)
+        {
+            widths[n] = w;
+            heights[n] = h;
+            n++;
+        }
+    }
+    trace("ui: %ld distinct 8-bit RTG modes", (long)n, 0L, 0L, 0L);
+    return n;
+}
+
 int amiga_ui_mode_available(int width, int height)
 {
     ULONG id = find_mode(width, height);
