@@ -163,7 +163,7 @@ SDL_AudioDeviceID SDL_OpenAudioDevice(const char*, int iscapture, const SDL_Audi
         *obtained = g_spec;
     g_open = true;
     g_paused = true;
-    amiga_trace("audio: AHI opened, 22050 Hz S16 stereo, 3 buffers");
+    amiga_trace("audio: AHI opened, 22050 Hz S16 stereo, up to 12 buffers (adaptive)");
     return 1;
 }
 

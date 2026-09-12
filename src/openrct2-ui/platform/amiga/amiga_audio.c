@@ -8,7 +8,7 @@
     #include <proto/exec.h>
     #include <string.h>
 
-    #define MAX_BUFFERS 4
+    #define MAX_BUFFERS 12
 
 static struct MsgPort* g_port = NULL;
 static struct AHIRequest* g_req[MAX_BUFFERS];
@@ -20,6 +20,9 @@ static int g_freq = 0;
 static int g_open = 0;
 static struct AHIRequest* g_last = NULL; /* most recently queued request, for ahir_Link */
 static unsigned g_written = 0, g_underruns = 0;
+static unsigned g_lastPumpMs = 0;
+static int g_target = 3; /* buffers kept in flight; grows when the main loop pumps rarely */
+extern unsigned amiga_ticks_ms(void);
 
 static void reap(int i)
 {
@@ -106,6 +109,8 @@ int amiga_audio_open(int freq, int frames, int numBuffers)
     }
     g_last = NULL;
     g_written = g_underruns = 0;
+    g_lastPumpMs = 0;
+    g_target = 3;
     return 1;
 }
 
@@ -121,11 +126,33 @@ int amiga_audio_pump(amiga_audio_fill_fn fill, void* user)
             busy++;
     if (busy == 0 && g_written > 0)
         g_underruns++;
+    /* Adapt the queue depth to how often the main loop gets here: at 25 fps three buffers (~280 ms) are
+     * enough; at one frame per second the queue must hold that second, or the sound stutters. */
+    {
+        unsigned now = amiga_ticks_ms();
+        unsigned bufMs = g_freq ? (unsigned)((g_bytes / 4) * 1000UL / (unsigned)g_freq) : 93;
+        if (g_lastPumpMs != 0 && bufMs != 0)
+        {
+            int want = (int)((now - g_lastPumpMs) / bufMs) + 2;
+            if (want < 3)
+                want = 3;
+            if (want > g_num)
+                want = g_num;
+            if (want > g_target)
+                g_target = want;
+            else if (want < g_target - 2)
+                g_target--;
+        }
+        g_lastPumpMs = now;
+    }
     for (i = 0; i < g_num; i++)
     {
         struct AHIRequest* r = g_req[i];
         if (g_inflight[i])
             continue;
+        if (busy >= g_target)
+            break;
+        busy++;
         fill(user, g_buf[i], g_bytes);
         r->ahir_Std.io_Message.mn_Node.ln_Pri = 0;
         r->ahir_Std.io_Command = CMD_WRITE;

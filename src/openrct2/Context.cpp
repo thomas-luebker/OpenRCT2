@@ -29,6 +29,10 @@
 #include "audio/Audio.h"
 #include "audio/AudioContext.h"
 #include "platform/AmigaTrace.h"
+#ifdef __amigaos__
+// trace-gated frame profile: ms per 20 drawn frames spent in events, sleep, ticks, input+windows and draw
+static uint32_t gAmigaFrameStat[8] = {};
+#endif
 #include "config/Config.h"
 #include "core/BackgroundWorker.hpp"
 #include "core/Console.hpp"
@@ -1315,26 +1319,47 @@ namespace OpenRCT2
         {
             PROFILED_FUNCTION();
 
+#ifdef __amigaos__
+            uint32_t s0 = Platform::GetTicks();
+#endif
             _uiContext->ProcessMessages();
+#ifdef __amigaos__
+            uint32_t s1 = Platform::GetTicks();
+            gAmigaFrameStat[0] += s1 - s0;
+#endif
 
             if (_ticksAccumulator < kGameUpdateTimeMS)
             {
                 const auto sleepTimeSec = std::min(kNetworkUpdateTimeMS, kGameUpdateTimeMS - _ticksAccumulator);
                 Platform::Sleep(static_cast<uint32_t>(sleepTimeSec * 1000.f));
+#ifdef __amigaos__
+                gAmigaFrameStat[1] += Platform::GetTicks() - s1;
+                gAmigaFrameStat[6]++;
+#endif
                 return;
             }
 
             while (_ticksAccumulator >= kGameUpdateTimeMS)
             {
                 Tick();
+#ifdef __amigaos__
+                gAmigaFrameStat[7]++;
+#endif
 
                 _ticksAccumulator -= kGameUpdateTimeMS;
             }
+#ifdef __amigaos__
+            uint32_t s2 = Platform::GetTicks();
+            gAmigaFrameStat[2] += s2 - s1;
+#endif
 
             _backgroundWorker.dispatchCompleted();
 
             ContextHandleInput();
             WindowUpdateAll();
+#ifdef __amigaos__
+            gAmigaFrameStat[4] += Platform::GetTicks() - s2;
+#endif
 
             if (ShouldDraw())
             {
@@ -1383,10 +1408,27 @@ namespace OpenRCT2
         void Draw()
         {
             PROFILED_FUNCTION();
+#ifdef __amigaos__
+            uint32_t d0 = Platform::GetTicks();
+#endif
 
             _drawingEngine->BeginDraw();
             _painter->Paint(*_drawingEngine);
             _drawingEngine->EndDraw();
+#ifdef __amigaos__
+            gAmigaFrameStat[3] += Platform::GetTicks() - d0;
+            if (++gAmigaFrameStat[5] % 20 == 0)
+            {
+                AMIGA_TRACE(String::stdFormat(
+                                "frame: per 20 draws: events %u ms, sleep %u ms (%u times), ticks %u ms (%u ticks), input+windows "
+                                "%u ms, draw %u ms",
+                                gAmigaFrameStat[0], gAmigaFrameStat[1], gAmigaFrameStat[6], gAmigaFrameStat[2], gAmigaFrameStat[7],
+                                gAmigaFrameStat[4], gAmigaFrameStat[3])
+                                .c_str());
+                for (auto& v : gAmigaFrameStat)
+                    v = 0;
+            }
+#endif
         }
 
         void Tick()
