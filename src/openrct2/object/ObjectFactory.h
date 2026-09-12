@@ -23,6 +23,7 @@ namespace OpenRCT2
 
 namespace OpenRCT2::ObjectFactory
 {
+    extern uint32_t gLoadStat[10]; // objects, ms file+decode, ms parse, bytes, ms whole factory call, ms whole load task (trace only)
     [[nodiscard]] std::unique_ptr<Object> CreateObjectFromFile(u8string_view path, bool loadImages);
     [[nodiscard]] std::unique_ptr<Object> CreateObjectFromLegacyFile(const utf8* path, bool loadImages);
     [[nodiscard]] std::unique_ptr<Object> CreateObjectFromLegacyData(

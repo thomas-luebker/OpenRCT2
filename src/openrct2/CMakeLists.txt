@@ -2,6 +2,8 @@ file(GLOB_RECURSE OPENRCT2_CORE_SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 if (AMIGA)
     file(GLOB OPENRCT2_AMIGA_C_SOURCES "${CMAKE_CURRENT_LIST_DIR}/platform/*.c")
     list(APPEND OPENRCT2_CORE_SOURCES ${OPENRCT2_AMIGA_C_SOURCES})
+    # Doug Lea's malloc replaces libnix's flat-list allocator (see platform/amiga_malloc.c); its source is not ours to lint.
+    set_source_files_properties("${CMAKE_CURRENT_LIST_DIR}/platform/amiga_malloc.c" PROPERTIES COMPILE_FLAGS "-w")
     # GCC 16 false positive in RideUpdateFavouritedStat / ResetAllRideBuildDates
     set_source_files_properties("${CMAKE_CURRENT_LIST_DIR}/ride/Ride.cpp" PROPERTIES COMPILE_FLAGS "-Wno-null-dereference")
 endif ()

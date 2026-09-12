@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <openrct2-ui/windows/Windows.h>
+#include <openrct2/platform/AmigaTrace.h>
 #include <openrct2/Context.h>
 #include <openrct2/Diagnostic.h>
 #include <openrct2/Game.h>
@@ -296,6 +297,7 @@ namespace OpenRCT2::Title
         bool LoadParkFromFile(const u8string& path)
         {
             LOG_VERBOSE("TitleSequencePlayer::LoadParkFromFile(%s)", path.c_str());
+            AMIGA_TRACE((std::string("title: load ") + path).c_str());
             bool success = false;
             try
             {

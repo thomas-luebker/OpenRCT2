@@ -10,8 +10,11 @@
 #include "SawyerChunkReader.h"
 
 #include "../core/IStream.hpp"
+#include "../core/Memory.hpp"
 #include "../core/MemoryStream.h"
 #include "../core/Numerics.hpp"
+
+#include <cstring>
 
 namespace OpenRCT2::SawyerCoding
 {
@@ -147,56 +150,64 @@ namespace OpenRCT2::SawyerCoding
 
     static MemoryStream DecodeChunkRLE(const void* src, size_t srcLength)
     {
-        MemoryStream buf;
-
+        // Two passes: size the output exactly first, then decode with memset/memcpy into a single allocation.
+        // The former one-byte-at-a-time WriteValue() loop with geometric buffer growth was the largest cost of
+        // loading objects on slow CPUs (37 MB of sprite data for one RCT2 scenario).
         auto src8 = static_cast<const uint8_t*>(src);
+        size_t outLength = 0;
         for (size_t i = 0; i < srcLength; i++)
         {
             uint8_t rleCodeByte = src8[i];
             if (rleCodeByte & 128)
             {
                 i++;
-                size_t count = 257 - rleCodeByte;
-
                 if (i >= srcLength)
                 {
                     throw SawyerChunkException(kExceptionMessageCorruptRLE);
                 }
-                if (buf.GetLength() + count > kMaxUncompressedChunkSize)
-                {
-                    throw SawyerChunkException(kExceptionMessageDestinationTooSmall);
-                }
-
-                for (size_t n = 0; n < count; n++)
-                {
-                    buf.WriteValue(src8[i]);
-                }
+                outLength += 257 - rleCodeByte;
             }
             else
             {
-                const auto len = rleCodeByte + 1;
-
-                if (i + 1 >= srcLength)
+                const size_t len = rleCodeByte + 1;
+                if (i + 1 >= srcLength || i + 1 + len > srcLength)
                 {
                     throw SawyerChunkException(kExceptionMessageCorruptRLE);
                 }
-                if (buf.GetLength() + len > kMaxUncompressedChunkSize)
-                {
-                    throw SawyerChunkException(kExceptionMessageDestinationTooSmall);
-                }
-                if (i + 1 + len > srcLength)
-                {
-                    throw SawyerChunkException(kExceptionMessageCorruptRLE);
-                }
-
-                const auto* pos = src8 + i + 1;
-
-                buf.Write(pos, len);
+                outLength += len;
                 i += len;
+            }
+            if (outLength > kMaxUncompressedChunkSize)
+            {
+                throw SawyerChunkException(kExceptionMessageDestinationTooSmall);
             }
         }
 
-        return buf;
+        if (outLength == 0)
+        {
+            return MemoryStream();
+        }
+        uint8_t* out = Memory::Allocate<uint8_t>(outLength);
+        uint8_t* dst = out;
+        for (size_t i = 0; i < srcLength; i++)
+        {
+            uint8_t rleCodeByte = src8[i];
+            if (rleCodeByte & 128)
+            {
+                i++;
+                const size_t count = 257 - rleCodeByte;
+                std::memset(dst, src8[i], count);
+                dst += count;
+            }
+            else
+            {
+                const size_t len = rleCodeByte + 1;
+                std::memcpy(dst, src8 + i + 1, len);
+                dst += len;
+                i += len;
+            }
+        }
+        return MemoryStream(out, outLength, { MemoryAccess::read, MemoryAccess::write, MemoryAccess::owner });
     }
 
     static MemoryStream DecodeChunkRepeat(const void* src, size_t srcLength)

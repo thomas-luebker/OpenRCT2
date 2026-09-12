@@ -8,10 +8,13 @@
  *****************************************************************************/
 
 #include "ObjectManager.h"
+#include "ObjectFactory.h"
 
 #include "../Context.h"
 #include "../Diagnostic.h"
 #include "../ParkImporter.h"
+#include "../platform/AmigaTrace.h"
+#include "../platform/Platform.h"
 #include "../audio/Audio.h"
 #include "../core/Console.hpp"
 #include "../core/EnumUtils.hpp"
@@ -593,6 +596,9 @@ namespace OpenRCT2
 
         void LoadObjects(std::vector<ObjectToLoad>& requiredObjects, bool reportProgress)
         {
+            const uint32_t tStart = Platform::GetTicks();
+            for (auto& v : OpenRCT2::ObjectFactory::gLoadStat)
+                v = 0;
             std::vector<Object*> objects;
             std::vector<Object*> newLoadedObjects;
             std::vector<ObjectEntryDescriptor> badObjects;
@@ -625,7 +631,9 @@ namespace OpenRCT2
             auto loadSingleObject = [&](const ObjectRepositoryItem* requiredObject) {
                 // Object requires to be loaded, if the object successfully loads it will register it
                 // as a loaded object otherwise placed into the badObjects list.
+                const uint32_t tTask = Platform::GetTicks();
                 auto newObject = _objectRepository.LoadObject(requiredObject);
+                OpenRCT2::ObjectFactory::gLoadStat[5] += Platform::GetTicks() - tTask;
 
                 std::lock_guard<std::mutex> guard(commonMutex);
                 if (newObject == nullptr)
@@ -677,10 +685,23 @@ namespace OpenRCT2
             }
 
             // Load objects
+            const uint32_t tLoad = Platform::GetTicks();
             for (auto* obj : newLoadedObjects)
             {
                 obj->Load();
             }
+            AMIGA_TRACE((std::string("objects: ") + std::to_string(newLoadedObjects.size()) + " of " + std::to_string(requiredObjects.size())
+                         + " required loaded in " + std::to_string(Platform::GetTicks() - tStart) + " ms: file+decode "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[1]) + " ms, parse " + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[2])
+                         + " ms (factory call " + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[4]) + " ms, load task "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[5]) + " ms), Load() " + std::to_string(Platform::GetTicks() - tLoad) + " ms, "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[3] / 1024) + " KB decoded; legacy DAT loads "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[0]) + ", json objects "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[6]) + " (read+parse "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[7]) + " ms, ReadJson "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[8]) + " ms), parkobj "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[9]))
+                            .c_str());
 
             if (!badObjects.empty())
             {

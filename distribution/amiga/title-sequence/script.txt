@@ -1,0 +1,29 @@
+# OpenRCT2 AmigaOS title sequence
+#
+# Tours the empty RollerCoaster Tycoon 2 beginner scenarios, which every RCT2 owner has and which
+# cost almost nothing to simulate (no guests yet). The stock OpenRCT2 sequence shows large community
+# parks with hundreds of guests: on a 68k that means minutes of loading and one or two frames per second.
+
+LOADSC Crazy Castle
+WAIT 15000
+ROTATE 1
+WAIT 15000
+ROTATE 1
+WAIT 15000
+
+LOADSC Electric Fields
+WAIT 15000
+ROTATE 3
+WAIT 15000
+
+LOADSC Factory Capers
+WAIT 15000
+ROTATE 1
+WAIT 15000
+
+LOADSC Amity Airfield
+WAIT 15000
+ROTATE 2
+WAIT 15000
+
+RESTART

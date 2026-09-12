@@ -399,7 +399,13 @@ namespace OpenRCT2::Config
             model->toolbarShowRotateAnticlockwise = reader->GetBoolean("toolbar_show_rotate_anti_clockwise", false);
             model->consoleSmallFont = reader->GetBoolean("console_small_font", false);
             model->currentThemePreset = reader->GetString("current_theme", "*RCT2");
+#ifdef __amigaos__
+            // The OpenRCT2 sequence shows large community parks with hundreds of guests: minutes to load and
+            // 1-2 fps on a 68k. The Amiga sequence tours the empty RCT2 beginner scenarios instead.
+            model->currentTitleSequencePreset = reader->GetString("current_title_sequence", "Amiga");
+#else
             model->currentTitleSequencePreset = reader->GetString("current_title_sequence", "*OPENRCT2");
+#endif
             model->randomTitleSequence = reader->GetBoolean("random_title_sequence", false);
             model->objectSelectionFilterFlags = reader->GetInt32("object_selection_filter_flags", 0x3FFF);
             model->scenarioSelectLastTab = reader->GetInt32("scenarioselect_last_tab", 0);

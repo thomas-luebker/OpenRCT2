@@ -19,6 +19,8 @@
 #include "JobPool.h"
 #include "Numerics.hpp"
 #include "Path.hpp"
+#include "../platform/AmigaTrace.h"
+#include "../platform/Platform.h"
 
 #include <chrono>
 #include <list>
@@ -104,9 +106,12 @@ public:
     std::vector<TItem> LoadOrBuild(int32_t language) const
     {
         std::vector<TItem> items;
+        const uint32_t t0 = OpenRCT2::Platform::GetTicks();
         auto scanResult = Scan();
+        const uint32_t t1 = OpenRCT2::Platform::GetTicks();
         auto readIndexResult = ReadIndexFile(language, scanResult.Stats);
-        if (readIndexResult.first)
+        bool loaded = readIndexResult.first;
+        if (loaded)
         {
             // Index was loaded
             items = std::move(readIndexResult.second);
@@ -116,6 +121,11 @@ public:
             // Index was not loaded
             items = Build(language, scanResult);
         }
+        const uint32_t t2 = OpenRCT2::Platform::GetTicks();
+        AMIGA_TRACE((std::string("index ") + _name + ": scanned " + std::to_string(scanResult.Stats.TotalFiles) + " files in "
+                     + std::to_string(t1 - t0) + " ms, " + (loaded ? "loaded " : "REBUILT ") + std::to_string(items.size())
+                     + " items in " + std::to_string(t2 - t1) + " ms")
+                        .c_str());
         return items;
     }
 

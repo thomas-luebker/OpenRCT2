@@ -28,6 +28,9 @@ cp "$HERE/OpenRCT2-launcher.info" "$STAGE/OpenRCT2/OpenRCT2.info"
 cp "$HERE/OpenRCT2-drawer.info" "$STAGE/OpenRCT2.info"
 cp "$HERE/README.txt" "$HERE/README.txt.info" "$STAGE/OpenRCT2/"
 cp "$HERE/user/config.ini" "$STAGE/OpenRCT2/user/config.ini"
+# The Amiga title sequence (a zip with script.txt; the config selects it by its file name "Amiga")
+rm -f "$STAGE/OpenRCT2/data/sequence/Amiga.parkseq"
+(cd "$HERE/title-sequence" && zip -q -X "$STAGE/OpenRCT2/data/sequence/Amiga.parkseq" script.txt)
 printf 'OpenRCT2 0.5.5 AmigaOS/68k tester build %s (git %s), built %s\n' "$TAG" "$SHA" "$(date -u +%Y-%m-%dT%H:%MZ)" > "$STAGE/OpenRCT2/VERSION"
 find "$STAGE" -name .DS_Store -delete
 rm -f "$OUT/$NAME.lha"

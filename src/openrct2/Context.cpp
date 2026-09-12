@@ -565,12 +565,15 @@ namespace OpenRCT2
             AMIGA_TRACE("init: track designs");
             OpenProgress(STR_CHECKING_TRACK_DESIGN_FILES);
             _trackDesignRepository->Scan(currentLanguage);
+            AMIGA_TRACE("init: scenarios");
 
             OpenProgress(STR_CHECKING_SCENARIO_FILES);
             _scenarioRepository->Scan(currentLanguage);
 
             OpenProgress(STR_CHECKING_TITLE_SEQUENCES);
+            AMIGA_TRACE("init: title sequences");
             TitleSequenceManager::Scan();
+            AMIGA_TRACE("init: repositories done");
 
             OpenProgress(STR_LOADING_GENERIC);
         }
