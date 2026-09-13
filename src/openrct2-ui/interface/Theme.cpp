@@ -959,17 +959,30 @@ namespace OpenRCT2::Ui
         }
         // Some windows need to be transparent even if the colours aren't.
         // There doesn't seem to be any side-effects for all windows being transparent
-        if (Config::Get().general.solidToolbars
-            && (classification == WindowClass::topToolbar || classification == WindowClass::bottomToolbar
-                || classification == WindowClass::parkInfoPanel || classification == WindowClass::dateInfoPanel))
+        if (Config::Get().general.solidWindows)
         {
-            // Opaque bars: on a slow CPU a transparent bar costs a full-width viewport paint underneath it on every
-            // scrolled frame. The RCT2 bottom bar uses translucent panel colours, so those become plain colours too.
+            // On a slow CPU a transparent window costs a viewport paint underneath it on every scrolled frame, and
+            // the shift code then redraws the whole window as well. Bars: made opaque outright (their translucent
+            // panel colours become plain). Other windows: opaque unless they are translucent or draw no background.
+            const bool isBar = classification == WindowClass::topToolbar || classification == WindowClass::bottomToolbar
+                || classification == WindowClass::parkInfoPanel || classification == WindowClass::dateInfoPanel;
+            if (isBar)
+            {
+                for (int32_t i = 0; i < 6; i++)
+                {
+                    window->colours[i].flags.unset(ColourFlag::translucent);
+                }
+                return;
+            }
+            bool translucent = false;
             for (int32_t i = 0; i < 6; i++)
             {
-                window->colours[i].flags.unset(ColourFlag::translucent);
+                translucent |= window->colours[i].flags.has(ColourFlag::translucent);
             }
-            return;
+            if (!translucent && !window->flags.has(WindowFlag::noBackground))
+            {
+                return;
+            }
         }
         window->flags |= WindowFlag::transparent;
     }

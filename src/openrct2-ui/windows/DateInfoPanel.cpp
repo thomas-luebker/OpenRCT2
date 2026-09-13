@@ -151,7 +151,7 @@ namespace OpenRCT2::Ui::Windows
 
         void onDraw(RenderTarget& rt) override
         {
-            if (Config::Get().general.solidToolbars)
+            if (Config::Get().general.solidWindows)
             {
                 Rectangle::fillInset(
                     rt, { windowPos, windowPos + ScreenCoordsXY{ width - 1, height - 1 } }, colours[0], Rectangle::BorderStyle::outset);
@@ -190,7 +190,7 @@ namespace OpenRCT2::Ui::Windows
         auto* window = windowMgr->Create<DateInfoPanel>(
             WindowClass::dateInfoPanel, ScreenCoordsXY(ContextGetWidth() - kPanelWidth - 1, ContextGetHeight() - panelHeight),
             { kPanelWidth, panelHeight },
-            Config::Get().general.solidToolbars
+            Config::Get().general.solidWindows
                 ? WindowFlags{ WindowFlag::stickToFront, WindowFlag::noBackground, WindowFlag::noTitleBar }
                 : WindowFlags{ WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar });
 

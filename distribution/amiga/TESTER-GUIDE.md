@@ -1,6 +1,6 @@
 # OpenRCT2 on AmigaOS 3.2 (68k) — tester guide
 
-*Build: test10. This is an early, unfinished port. You are testing it — thank you.*
+*Build: test11. This is an early, unfinished port. You are testing it — thank you.*
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This build is a
 big-endian port of the upstream C++20 engine to 68k AmigaOS, with an Intuition/RTG display
@@ -45,12 +45,12 @@ Scrolling with the mouse at the screen edge or with the arrow keys now moves the
 amount per second whatever the frame rate. Earlier builds moved one fixed step per drawn frame, which
 crawled at 15 fps and jumped at the map edge.
 
-## 2d. Solid toolbars
+## 2d. Solid windows
 
-The top toolbar and the bottom bar are drawn opaque on the Amiga (`solid_toolbars = true` in
-`user/config.ini`). With the transparent bars of the PC version the landscape underneath both bars
-had to be painted again on every scrolled frame, which cost about a third of the scrolling frame
-rate. Set `solid_toolbars = false` if you prefer the transparent look.
+Windows and the two bars are drawn opaque on the Amiga (`solid_windows = true` in `user/config.ini`).
+The PC version treats every window as transparent, so the landscape underneath every open window and
+both bars was painted again on every scrolled frame; that cost more than half of the scrolling frame
+rate. Set `solid_windows = false` if you prefer the transparent look.
 
 ## 3. Install the game
 

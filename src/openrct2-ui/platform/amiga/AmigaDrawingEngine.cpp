@@ -16,6 +16,7 @@
     #include <openrct2/drawing/IDrawingEngine.h>
     #include <openrct2/drawing/X8DrawingEngine.h>
     #include <openrct2/interface/Viewport.h>
+    #include <openrct2/interface/Window.h>
     #include <openrct2/platform/AmigaTrace.h>
     #include <openrct2/ui/UiContext.h>
 
@@ -125,6 +126,25 @@ public:
                     .c_str());
             for (auto& v : gViewportPaintStat)
                 v = 0;
+            {
+                // the four window classes that cost the most drawing time in this period
+                std::string line = "gfx: window draw ms/calls by class:";
+                for (int n = 0; n < 4; n++)
+                {
+                    int best = -1;
+                    for (int c = 0; c < 256; c++)
+                        if (gWindowDrawStat[c].calls != 0 && (best < 0 || gWindowDrawStat[c].ms > gWindowDrawStat[best].ms))
+                            best = c;
+                    if (best < 0)
+                        break;
+                    line += " " + std::to_string(best) + ":" + std::to_string(gWindowDrawStat[best].ms) + "/"
+                        + std::to_string(gWindowDrawStat[best].calls);
+                    gWindowDrawStat[best].calls = 0;
+                }
+                for (auto& st : gWindowDrawStat)
+                    st = {};
+                AMIGA_TRACE(line.c_str());
+            }
             frames = 0;
             t0 = now;
             _msRaster = _msBlit = 0;

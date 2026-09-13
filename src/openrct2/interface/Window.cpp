@@ -9,6 +9,8 @@
 
 #include "Window.h"
 
+#include "../platform/Platform.h"
+
 #include "../Context.h"
 #include "../Game.h"
 #include "../Input.h"
@@ -74,6 +76,8 @@ static constexpr float kWindowScrollLocations[][2] = {
         Drawing::RenderTarget& rt, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom);
     static void WindowDrawSingle(
         Drawing::RenderTarget& rt, WindowBase& w, int32_t left, int32_t top, int32_t right, int32_t bottom);
+
+    WindowDrawStat gWindowDrawStat[256] = {};
 
     std::vector<std::unique_ptr<WindowBase>>::iterator WindowGetIterator(const WindowBase* w)
     {
@@ -625,6 +629,7 @@ static constexpr float kWindowScrollLocations[][2] = {
 
         // Invalidate modifies the window colours so first get the correct
         // colour before setting the global variables for the string painting
+        const uint32_t tDraw = Platform::GetTicks();
         w.onPrepareDraw();
 
         // Text colouring
@@ -633,6 +638,8 @@ static constexpr float kWindowScrollLocations[][2] = {
         Drawing::gCurrentWindowColours[2] = w.colours[2].colour;
 
         w.onDraw(copy);
+        gWindowDrawStat[EnumValue(w.classification)].ms += Platform::GetTicks() - tDraw;
+        gWindowDrawStat[EnumValue(w.classification)].calls++;
     }
 
     bool isToolActive(WindowClass cls)

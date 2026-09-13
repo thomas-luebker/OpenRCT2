@@ -160,6 +160,12 @@ namespace OpenRCT2::Drawing
         size_t numLines = 0;
         int32_t maxWidth = 0;
 
+        // Measuring the whole current line again for every character made wrapping quadratic (2 ms per paragraph
+        // on a 68k, for every window redraw). With the sprite font the width is the sum of the glyph widths, so it
+        // is accumulated per character and only re-measured where a line starts or a format code was appended.
+        const bool incremental = !LocalisationService_UseTrueTypeFont();
+        int32_t runningWidth = 0;
+
         FmtString fmt(text);
         for (const auto& token : fmt)
         {
@@ -172,7 +178,16 @@ namespace OpenRCT2::Drawing
                     UTF8WriteCodepoint(cb, codepoint);
                     buffer.append(cb);
 
-                    auto lineWidth = getStringWidth(&buffer[currentLineIndex], fontStyle);
+                    int32_t lineWidth;
+                    if (incremental)
+                    {
+                        runningWidth += FontSpriteGetCodepointWidth(fontStyle, codepoint);
+                        lineWidth = runningWidth;
+                    }
+                    else
+                    {
+                        lineWidth = getStringWidth(&buffer[currentLineIndex], fontStyle);
+                    }
                     if (lineWidth <= width || (splitIndex == kNullIndex && bestSplitIndex == kNullIndex))
                     {
                         if (codepoint == ' ')
@@ -209,6 +224,10 @@ namespace OpenRCT2::Drawing
                         {
                             buffer.erase(buffer.begin() + currentLineIndex);
                         }
+                        if (incremental)
+                        {
+                            runningWidth = getStringWidth(&buffer[currentLineIndex], fontStyle);
+                        }
                     }
                 }
             }
@@ -223,10 +242,16 @@ namespace OpenRCT2::Drawing
                 currentLineIndex = buffer.size();
                 splitIndex = kNullIndex;
                 bestSplitIndex = kNullIndex;
+                runningWidth = 0;
             }
             else
             {
                 buffer.append(token.text);
+                if (incremental)
+                {
+                    // a format code may carry width (inline sprite) or change the font: measure the line once
+                    runningWidth = getStringWidth(&buffer[currentLineIndex], fontStyle);
+                }
             }
         }
         {
@@ -777,6 +802,17 @@ namespace OpenRCT2::Drawing
 
         info.palette = _savedTextPalette;
         processInitialColour(colour, info);
+#ifdef __amigaos__
+        // A window redraw for a small dirty rectangle still walks every string it owns: skip the glyph blits of lines
+        // that lie entirely outside the render target (positions and colour codes are still tracked).
+        {
+            const int32_t lineHeight = FontGetLineHeight(fontStyle) + 16; // margin for y-offset (wavy) text
+            if (coords.y + lineHeight <= rt.y || coords.y - 16 >= rt.y + rt.height || coords.x >= rt.x + rt.width)
+            {
+                info.textDrawFlags.set(TextDrawFlag::noDraw);
+            }
+        }
+#endif
         processString(rt, text, info);
         _savedTextPalette = info.palette;
 

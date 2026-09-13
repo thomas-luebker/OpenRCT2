@@ -273,9 +273,9 @@ namespace OpenRCT2::Config
             model->transparentWater = reader->GetBoolean("transparent_water", true);
 #ifdef __amigaos__
             // Transparent bars cost a full-width viewport paint under each of them on every scrolled frame.
-            model->solidToolbars = reader->GetBoolean("solid_toolbars", true);
+            model->solidWindows = reader->GetBoolean("solid_windows", true);
 #else
-            model->solidToolbars = reader->GetBoolean("solid_toolbars", false);
+            model->solidWindows = reader->GetBoolean("solid_windows", false);
 #endif
 
             model->invisibleRides = reader->GetBoolean("invisible_rides", false);
@@ -375,7 +375,7 @@ namespace OpenRCT2::Config
         writer->WriteEnum<VirtualFloorStyles>("virtual_floor_style", model->virtualFloorStyle, Enum_VirtualFloorStyle);
         writer->WriteBoolean("transparent_screenshot", model->transparentScreenshot);
         writer->WriteBoolean("transparent_water", model->transparentWater);
-        writer->WriteBoolean("solid_toolbars", model->solidToolbars);
+        writer->WriteBoolean("solid_windows", model->solidWindows);
         writer->WriteBoolean("invisible_rides", model->invisibleRides);
         writer->WriteBoolean("invisible_vehicles", model->invisibleVehicles);
         writer->WriteBoolean("invisible_trees", model->invisibleTrees);

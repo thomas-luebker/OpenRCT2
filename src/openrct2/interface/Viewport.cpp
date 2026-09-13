@@ -1819,6 +1819,62 @@ namespace OpenRCT2
         }
         invalidRect.Point1 += viewportScreenPos;
         invalidRect.Point2 += viewportScreenPos;
+#ifdef __amigaos__
+        if (Config::Get().general.solidWindows)
+        {
+            // Nothing behind an opaque window can show, so a moving guest under the scenario window must not cost
+            // a repaint of the window (6 ms on a 68k): subtract the opaque windows above this viewport's window.
+            WindowBase* owner = nullptr;
+            for (auto& wp : gWindowList)
+            {
+                if (wp->viewport == viewport && !wp->flags.has(WindowFlag::dead))
+                {
+                    owner = wp.get();
+                    break;
+                }
+            }
+            if (owner != nullptr)
+            {
+                std::vector<ScreenRect> pieces{ invalidRect };
+                auto it = std::next(WindowGetIterator(owner));
+                for (; it != gWindowList.end() && pieces.size() < 32; ++it)
+                {
+                    const auto* w = it->get();
+                    if (w->flags.has(WindowFlag::dead) || w->flags.has(WindowFlag::transparent) || !w->isVisible)
+                        continue;
+                    const ScreenRect wr = { w->windowPos, w->windowPos + ScreenCoordsXY{ w->width, w->height } };
+                    std::vector<ScreenRect> next;
+                    for (const auto& r : pieces)
+                    {
+                        if (r.GetRight() <= wr.GetLeft() || r.GetLeft() >= wr.GetRight() || r.GetBottom() <= wr.GetTop()
+                            || r.GetTop() >= wr.GetBottom())
+                        {
+                            next.push_back(r);
+                            continue;
+                        }
+                        // strips of r outside wr: above, below, left, right
+                        if (r.GetTop() < wr.GetTop())
+                            next.push_back({ r.Point1, { r.GetRight(), wr.GetTop() } });
+                        if (r.GetBottom() > wr.GetBottom())
+                            next.push_back({ { r.GetLeft(), wr.GetBottom() }, r.Point2 });
+                        const int32_t midTop = std::max(r.GetTop(), wr.GetTop());
+                        const int32_t midBottom = std::min(r.GetBottom(), wr.GetBottom());
+                        if (r.GetLeft() < wr.GetLeft())
+                            next.push_back({ { r.GetLeft(), midTop }, { wr.GetLeft(), midBottom } });
+                        if (r.GetRight() > wr.GetRight())
+                            next.push_back({ { wr.GetRight(), midTop }, { r.GetRight(), midBottom } });
+                    }
+                    pieces.swap(next);
+                }
+                for (const auto& r : pieces)
+                {
+                    if (r.GetRight() > r.GetLeft() && r.GetBottom() > r.GetTop())
+                        GfxSetDirtyBlocks(r);
+                }
+                return;
+            }
+        }
+#endif
         GfxSetDirtyBlocks(invalidRect);
     }
 

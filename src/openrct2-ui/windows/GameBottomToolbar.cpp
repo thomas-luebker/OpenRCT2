@@ -327,7 +327,7 @@ namespace OpenRCT2::Ui::Windows
         {
             const auto& middleWidget = widgets[WIDX_PANEL_OUTSET];
 
-            if (Config::Get().general.solidToolbars)
+            if (Config::Get().general.solidWindows)
             {
                 Rectangle::fillInset(
                     rt, { windowPos, windowPos + ScreenCoordsXY{ width - 1, height - 1 } }, colours[0], Rectangle::BorderStyle::outset);
@@ -377,7 +377,7 @@ namespace OpenRCT2::Ui::Windows
         int32_t toolbarHeight = lineHeight * 2 + 12;
 
         auto* windowMgr = GetWindowManager();
-        auto flags = Config::Get().general.solidToolbars
+        auto flags = Config::Get().general.solidWindows
             ? WindowFlags{ WindowFlag::stickToFront, WindowFlag::noBackground, WindowFlag::noTitleBar }
             : WindowFlags{ WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar };
         auto* window = windowMgr->Create<GameBottomToolbar>(

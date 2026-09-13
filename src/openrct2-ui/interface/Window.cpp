@@ -9,6 +9,8 @@
 
 #include "Window.h"
 
+#include <openrct2/platform/Platform.h>
+
 #include "../UiStringIds.h"
 #include "Widget.h"
 
@@ -1031,6 +1033,15 @@ namespace OpenRCT2::Ui::Windows
      */
     void WindowDrawWidgets(WindowBase& w, RenderTarget& rt)
     {
+        struct WidgetsTimer
+        {
+            uint32_t t0 = Platform::GetTicks();
+            ~WidgetsTimer()
+            {
+                gWindowDrawStat[255].ms += Platform::GetTicks() - t0; // slot 255: all widget drawing (trace)
+                gWindowDrawStat[255].calls++;
+            }
+        } widgetsTimer;
         if (w.flags.has(WindowFlag::transparent) && !w.flags.has(WindowFlag::noBackground))
             Rectangle::filter(
                 rt, { w.windowPos, w.windowPos + ScreenCoordsXY{ w.width - 1, w.height - 1 } }, FilterPaletteID::palette51);
