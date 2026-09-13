@@ -1226,8 +1226,10 @@ namespace OpenRCT2::PathFinding
     // trace profile (AmigaOS): [0] CalculateNextDestination calls, [1] its microseconds, [2] edge searches, [3] tiles checked
     uint32_t gPathStat[8] = {}; // [4] searches that exhausted their tile budget, [5] tiles checked by those,
                                 // [6] ChooseDirection calls whose (tile, goal, junction limit) was seen within 8 ticks, [7] calls
+#ifdef __amigaos__
     static uint32_t sRecentKeys[1024];
     static uint32_t sRecentTicks[1024];
+#endif
 
     Direction ChooseDirection(
         const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, Peep& peep, bool ignoreForeignQueues, RideId queueRideIndex)
