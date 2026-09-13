@@ -669,6 +669,7 @@ namespace OpenRCT2
         G1Element newg1 = g1;
         if (G1CalculateDataSize(&g1) == 0)
         {
+            delete[] g1.offset; // a zero-length buffer nobody will ever look at
             newg1.offset = nullptr;
         }
         g1.offset = nullptr;

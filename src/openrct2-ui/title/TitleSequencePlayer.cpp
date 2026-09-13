@@ -297,7 +297,7 @@ namespace OpenRCT2::Title
         bool LoadParkFromFile(const u8string& path)
         {
             LOG_VERBOSE("TitleSequencePlayer::LoadParkFromFile(%s)", path.c_str());
-            AMIGA_TRACE((std::string("title: load ") + path).c_str());
+            AMIGA_TRACE((std::string("title: load ") + path + " (free " + std::to_string(amiga_avail_kb()) + " KB)").c_str());
             bool success = false;
             try
             {
@@ -321,24 +321,29 @@ namespace OpenRCT2::Title
                     auto& objectManager = GetContext()->GetObjectManager();
                     objectManager.LoadObjects(result.RequiredObjects, true);
                     ReportProgress(90);
+                    AMIGA_TRACE("title: objects loaded, importing");
 
                     // TODO: Have a separate GameState and exchange once loaded.
                     auto& gameState = getGameState();
                     parkImporter->Import(gameState);
+                    AMIGA_TRACE("title: import done");
 
                     GameFixSaveVars();
 
                     ReportProgress(100);
 
                     MapAnimations::MarkAllTiles();
+                    AMIGA_TRACE("title: animations marked");
                 }
                 PrepareParkForPlayback();
+                AMIGA_TRACE("title: park prepared for playback");
                 _initialLoadCommand = false;
                 success = true;
             }
             catch (const std::exception& e)
             {
                 Console::Error::WriteLine("Unable to load park ‘%s’: %s", path.c_str(), e.what());
+                AMIGA_TRACE((std::string("title: load FAILED: ") + e.what()).c_str());
                 GetContext()->CloseProgress();
             }
 

@@ -22,7 +22,19 @@
 #define NO_MALLOC_STATS 1
 #define malloc_getpagesize 4096
 #define DEFAULT_GRANULARITY (1024UL * 1024UL)
-#define ABORT abort()
+/* Heap corruption detection: FOOTERS stores a check word behind every chunk and fails loudly instead of
+ * looping forever on a damaged bin; the failure is written to the trace file before the process ends. */
+#define FOOTERS 1
+#define PROCEED_ON_ERROR 0
+void amiga_trace(const char* line);
+static void amiga_heap_abort(void)
+{
+    amiga_trace("HEAP: dlmalloc detected a corrupted chunk (FOOTERS) -- aborting");
+    abort();
+}
+#define ABORT amiga_heap_abort()
+#define USAGE_ERROR_ACTION(m, p) amiga_heap_abort()
+#define CORRUPTION_ERROR_ACTION(m) amiga_heap_abort()
 #define USE_DL_PREFIX 1
 
 struct amiga_step { struct amiga_step* next; unsigned long size; };

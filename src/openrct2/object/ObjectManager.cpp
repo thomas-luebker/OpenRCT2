@@ -9,6 +9,7 @@
 
 #include "ObjectManager.h"
 #include "ObjectFactory.h"
+#include "../drawing/Image.h"
 
 #include "../Context.h"
 #include "../Diagnostic.h"
@@ -685,6 +686,7 @@ namespace OpenRCT2
             }
 
             // Load objects
+            ::gImageAllocStat[0] = ::gImageAllocStat[1] = 0;
             const uint32_t tLoad = Platform::GetTicks();
             for (auto* obj : newLoadedObjects)
             {
@@ -694,7 +696,8 @@ namespace OpenRCT2
                          + " required loaded in " + std::to_string(Platform::GetTicks() - tStart) + " ms: file+decode "
                          + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[1]) + " ms, parse " + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[2])
                          + " ms (factory call " + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[4]) + " ms, load task "
-                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[5]) + " ms), Load() " + std::to_string(Platform::GetTicks() - tLoad) + " ms, "
+                         + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[5]) + " ms), Load() " + std::to_string(Platform::GetTicks() - tLoad) + " ms (of which "
+                         + std::to_string(::gImageAllocStat[0]) + " images registered in " + std::to_string(::gImageAllocStat[1]) + " ms), "
                          + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[3] / 1024) + " KB decoded; legacy DAT loads "
                          + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[0]) + ", json objects "
                          + std::to_string(OpenRCT2::ObjectFactory::gLoadStat[6]) + " (read+parse "
@@ -714,6 +717,7 @@ namespace OpenRCT2
             }
 
             // Unload objects which are not in the required list.
+            AMIGA_TRACE("objects: unloading the ones no longer required");
             if (objects.empty())
             {
                 UnloadAllTransient();
@@ -722,6 +726,7 @@ namespace OpenRCT2
             {
                 UnloadObjectsExcept(objects);
             }
+            AMIGA_TRACE("objects: unloaded, setting object lists");
 
             // Set the new object lists
             for (auto type : getAllObjectTypes())

@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <openrct2/audio/AudioSource.h>
+#include <openrct2/platform/AmigaTrace.h>
 
 namespace OpenRCT2::Audio
 {
@@ -228,9 +229,20 @@ namespace OpenRCT2::Audio
         {
             size_t bytesRead = 0;
             size_t bytesToRead = len;
+            uint32_t emptyReads = 0;
             while (bytesToRead > 0 && !_done)
             {
                 size_t readLen = _source->Read(dst, _offset, bytesToRead);
+                if (readLen == 0 && ++emptyReads > 64)
+                {
+                    // A looping source that yields nothing (closed stream, zero-length data) would spin here forever;
+                    // the whole game hangs on AmigaOS because the mixer runs on the main loop.
+                    AMIGA_TRACE((std::string("audio: channel read stuck, dropping it (offset ") + std::to_string(_offset)
+                                 + ", source length " + std::to_string(_source->GetLength()) + ", loop " + std::to_string(_loop) + ")")
+                                    .c_str());
+                    _done = true;
+                    break;
+                }
                 if (readLen > 0)
                 {
                     dst = static_cast<void*>(static_cast<uint8_t*>(dst) + readLen);

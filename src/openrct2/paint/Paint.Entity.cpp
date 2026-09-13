@@ -17,6 +17,7 @@
 #include "../ride/TrackDesign.h"
 #include "../world/Map.h"
 #include "Paint.h"
+#include "../platform/AmigaTrace.h"
 #include "entity/Paint.Balloon.h"
 #include "entity/Paint.CrashSplashParticle.h"
 #include "entity/Paint.Duck.h"
@@ -43,6 +44,11 @@ using namespace OpenRCT2::Drawing;
 void EntityPaintSetup(PaintSession& session, const CoordsXY& pos)
 {
     PROFILED_FUNCTION();
+#ifdef __amigaos__
+    static const bool skip = amiga_env_flag("OPENRCT2_SKIP_ENTITIES") != 0; // measurement aid, not a feature
+    if (skip)
+        return;
+#endif
 
     if (!MapIsLocationValid(pos))
     {

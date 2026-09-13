@@ -21,6 +21,7 @@
 #include "../../world/tile_element/TileElement.h"
 #include "../Paint.SessionFlags.h"
 #include "../Paint.h"
+#include "../../platform/AmigaTrace.h"
 #include "../VirtualFloor.h"
 #include "Paint.Banner.h"
 #include "Paint.Entrance.h"
@@ -263,8 +264,14 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
         switch (tile_element->getType())
         {
             case TileElementType::surface:
-                PaintSurface(session, direction, baseZ, *(tile_element->asSurface()));
+            {
+#ifdef __amigaos__
+                static const bool skip = amiga_env_flag("OPENRCT2_SKIP_SURFACE") != 0; // measurement aid
+                if (!skip)
+#endif
+                    PaintSurface(session, direction, baseZ, *(tile_element->asSurface()));
                 break;
+            }
             case TileElementType::path:
                 PaintPath(session, baseZ, *(tile_element->asPath()));
                 break;

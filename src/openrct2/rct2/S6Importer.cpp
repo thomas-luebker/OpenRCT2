@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "../Context.h"
+#include "../platform/AmigaTrace.h"
 #include "../Diagnostic.h"
 #include "../Game.h"
 #include "../GameState.h"
@@ -843,7 +844,9 @@ namespace OpenRCT2::RCT2
 
         void Import(GameState_t& gameState) override
         {
+            AMIGA_TRACE("s6: initialise");
             Initialise(gameState);
+            AMIGA_TRACE("s6: initialised");
 
             gameState.editorStep = _s6.Info.EditorStep;
             gameState.scenarioOptions.category = _s6.Info.Category;
@@ -871,9 +874,13 @@ namespace OpenRCT2::RCT2
             ScenarioRandSeed(_s6.ScenarioSrand0, _s6.ScenarioSrand1);
 
             DetermineFlatRideStatus();
+            AMIGA_TRACE("s6: tile elements");
             ImportTileElements(gameState);
+            AMIGA_TRACE("s6: entities");
             ImportEntities(gameState);
+            AMIGA_TRACE("s6: peep animations");
             ConvertPeepAnimationTypeToObjects(gameState);
+            AMIGA_TRACE("s6: rest");
 
             auto& park = gameState.park;
 

@@ -9,6 +9,8 @@
 
 #include "Image.h"
 
+#include "../platform/Platform.h"
+
 #include "../Diagnostic.h"
 #include "../OpenRCT2.h"
 #include "../SpriteIds.h"
@@ -180,12 +182,16 @@ static void FreeImageList(uint32_t baseImageId, uint32_t count)
     _freeLists.push_back({ baseImageId, count });
 }
 
+// Trace accumulators: images registered and ms spent, printed with the object load summary.
+uint32_t gImageAllocStat[2] = { 0, 0 };
+
 uint32_t GfxObjectAllocateImages(const G1Element* images, uint32_t count)
 {
     if (count == 0 || gOpenRCT2NoGraphics)
     {
         return kImageIndexUndefined;
     }
+    const uint32_t tStart = OpenRCT2::Platform::GetTicks();
 
     uint32_t baseImageId = AllocateImageList(count);
     if (baseImageId == kImageIndexUndefined)
@@ -201,6 +207,8 @@ uint32_t GfxObjectAllocateImages(const G1Element* images, uint32_t count)
         DrawingEngineInvalidateImage(imageId);
         imageId++;
     }
+    gImageAllocStat[0] += count;
+    gImageAllocStat[1] += OpenRCT2::Platform::GetTicks() - tStart;
 
     return baseImageId;
 }

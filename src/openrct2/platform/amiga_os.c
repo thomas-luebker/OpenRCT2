@@ -23,30 +23,61 @@ void amiga_sleep_ms(unsigned ms)
         Delay(ticks);
 }
 
+static struct MsgPort* s_timerPort = NULL;
+static struct timerequest* s_timerReq = NULL;
+
+struct timerequest* amiga_timer_request(void)
+{
+    return s_timerReq;
+}
+
 unsigned amiga_ticks_ms(void)
 {
     /* GetSysTime() is wall-clock with microsecond resolution; good enough for frame timing. */
     struct Library* TimerBase;
-    static struct MsgPort* port = NULL;
-    static struct timerequest* req = NULL;
     struct timeval tv;
-    if (req == NULL)
+    if (s_timerReq == NULL)
     {
-        port = CreateMsgPort();
-        if (port == NULL)
+        s_timerPort = CreateMsgPort();
+        if (s_timerPort == NULL)
             return 0;
-        req = (struct timerequest*)CreateIORequest(port, sizeof(struct timerequest));
-        if (req == NULL)
+        s_timerReq = (struct timerequest*)CreateIORequest(s_timerPort, sizeof(struct timerequest));
+        if (s_timerReq == NULL)
             return 0;
-        if (OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest*)req, 0) != 0)
+        if (OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest*)s_timerReq, 0) != 0)
         {
-            req = NULL;
+            s_timerReq = NULL;
             return 0;
         }
     }
-    TimerBase = (struct Library*)req->tr_node.io_Device;
+    TimerBase = (struct Library*)s_timerReq->tr_node.io_Device;
     GetSysTime(&tv);
     return (unsigned)(tv.tv_secs * 1000u + tv.tv_micro / 1000u);
+}
+
+/* Microseconds, wall clock, for fine-grained profiling in the trace. */
+unsigned amiga_ticks_us(void)
+{
+    struct Library* TimerBase;
+    struct timeval tv;
+    if (amiga_ticks_ms() == 0)
+        return 0; /* opens the timer device on first use */
+    TimerBase = (struct Library*)s_timerReq->tr_node.io_Device;
+    GetSysTime(&tv);
+    return (unsigned)(tv.tv_secs * 1000000u + tv.tv_micro);
+}
+
+/* 1 when the named AmigaDOS environment variable exists (SetEnv NAME 1); for trace-time experiments. */
+int amiga_env_flag(const char* name)
+{
+    char buf[8];
+    return GetVar((STRPTR)name, (STRPTR)buf, sizeof(buf), 0) > 0 ? 1 : 0;
+}
+
+/* Free memory in KB (all types), for the trace. */
+unsigned amiga_avail_kb(void)
+{
+    return (unsigned)(AvailMem(MEMF_ANY) / 1024);
 }
 
 /* Full path of the running program, e.g. "Work:OpenRCT2/openrct2-cli". Returns 0 on failure. */

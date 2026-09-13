@@ -23,6 +23,7 @@
 #include <openrct2/Context.h>
 #include <openrct2/Game.h>
 #include <openrct2/Input.h>
+#include <openrct2/platform/Platform.h>
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/audio/Audio.h>
 #include <openrct2/config/Config.h>
@@ -1656,7 +1657,19 @@ namespace OpenRCT2
         if (viewport == nullptr)
             return;
 
-        const int32_t speed = Config::Get().general.edgeScrollingSpeed;
+        int32_t speed = Config::Get().general.edgeScrollingSpeed;
+#ifdef __amigaos__
+        // Scrolling advances once per drawn frame, so at 10-20 fps it crawls in visible jumps while it flies at
+        // 60 fps. Scale the step by the real frame time (60 fps = 1x) so the speed on screen stays the same.
+        {
+            static uint32_t sLastScrollMs = 0;
+            const uint32_t now = Platform::GetTicks();
+            uint32_t dt = (sLastScrollMs != 0 && now > sLastScrollMs) ? now - sLastScrollMs : 16;
+            sLastScrollMs = now;
+            dt = std::clamp<uint32_t>(dt, 16, 250);
+            speed = static_cast<int32_t>((static_cast<uint32_t>(speed) * dt + 8) / 16);
+        }
+#endif
 
         int32_t multiplier = viewport->zoom.ApplyTo(speed);
         int32_t dx = scrollScreenCoords.x * multiplier;

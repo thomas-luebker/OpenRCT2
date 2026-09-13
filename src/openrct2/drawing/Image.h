@@ -59,6 +59,8 @@ constexpr bool operator!=(const ImageList& lhs, const ImageList& rhs)
 }
 
 uint32_t GfxObjectAllocateImages(const OpenRCT2::G1Element* images, uint32_t count);
+// Trace accumulators (images registered, ms spent), reset and printed by the object manager's load summary.
+extern uint32_t gImageAllocStat[2];
 void GfxObjectFreeImages(uint32_t baseImageId, uint32_t count);
 void GfxObjectCheckAllImagesFreed();
 size_t ImageListGetUsedCount();

@@ -13,6 +13,8 @@
 #include "../Diagnostic.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
+#include "../platform/AmigaTrace.h"
+#include "../platform/Platform.h"
 #include "../config/Config.h"
 #include "../core/Guard.hpp"
 #include "../core/JobPool.h"
@@ -835,12 +837,16 @@ namespace OpenRCT2
         ViewportPaint(viewport, rt);
     }
 
+    static uint32_t sArrangeMs = 0; // trace: share of ViewportFillColumn spent sorting
+
     static void ViewportFillColumn(PaintSession& session)
     {
         PROFILED_FUNCTION();
 
         PaintSessionGenerate(session);
+        const uint32_t t = Platform::GetTicks();
         PaintSessionArrange(session);
+        sArrangeMs += Platform::GetTicks() - t;
     }
 
     static void ViewportPaintColumn(PaintSession& session)
@@ -927,6 +933,10 @@ namespace OpenRCT2
         const int32_t rightBorder = worldRT.x + worldRT.width;
         const int32_t alignedX = floor2(worldRT.x, columnWidth);
 
+        // Trace-gated paint profile: where the rasterise time goes (tile walk + sort vs sprite drawing).
+        static uint32_t sPaintStat[4] = { 0, 0, 0, 0 }; // paints, fill ms, draw ms, columns
+        const uint32_t tFill = Platform::GetTicks();
+
         // Generate and sort columns.
         for (int32_t x = alignedX; x < rightBorder; x += columnWidth)
         {
@@ -975,6 +985,7 @@ namespace OpenRCT2
         {
             _paintJobs->Join();
         }
+        const uint32_t tDraw = Platform::GetTicks();
 
         // Paint columns.
         for (auto* session : _paintColumns)
@@ -991,6 +1002,19 @@ namespace OpenRCT2
         if (useParallelDrawing)
         {
             _paintJobs->Join();
+        }
+        sPaintStat[0]++;
+        sPaintStat[1] += tDraw - tFill;
+        sPaintStat[2] += Platform::GetTicks() - tDraw;
+        sPaintStat[3] += static_cast<uint32_t>(_paintColumns.size());
+        if (sPaintStat[0] == 200)
+        {
+            AMIGA_TRACE((std::string("paint: per 200 viewport paints: generate ") + std::to_string(sPaintStat[1] - sArrangeMs) + " ms, sort "
+                         + std::to_string(sArrangeMs) + " ms, draw sprites " + std::to_string(sPaintStat[2]) + " ms, "
+                         + std::to_string(sPaintStat[3]) + " columns")
+                            .c_str());
+            sPaintStat[0] = sPaintStat[1] = sPaintStat[2] = sPaintStat[3] = 0;
+            sArrangeMs = 0;
         }
 
         // Release resources.
