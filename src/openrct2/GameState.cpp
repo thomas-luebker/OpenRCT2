@@ -403,7 +403,9 @@ namespace OpenRCT2
                              + " edge searches, " + std::to_string(PathFinding::gPathStat[3]) + " tiles checked; "
                              + std::to_string(PathFinding::gPathStat[4]) + " searches exhausted their budget with "
                              + std::to_string(PathFinding::gPathStat[5]) + " tiles; " + std::to_string(PathFinding::gPathStat[6]) + " of "
-                             + std::to_string(PathFinding::gPathStat[7]) + " direction choices repeat a recent (tile, goal)")
+                             + std::to_string(PathFinding::gPathStat[7]) + " direction choices repeat a recent (tile, goal); "
+                             + std::to_string(PathFinding::gPathStat[10]) + " elements iterated, " + std::to_string(PathFinding::gPathStat[11])
+                             + " junction visits, thin-junction tests " + std::to_string(PathFinding::gPathStat[9] / 1000) + " ms")
                                 .c_str());
                 for (auto& v : PathFinding::gPathStat)
                     v = 0;

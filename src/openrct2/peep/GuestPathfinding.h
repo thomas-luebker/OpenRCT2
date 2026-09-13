@@ -25,7 +25,7 @@ namespace OpenRCT2::PathFinding
     Direction ChooseDirection(
         const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, Peep& peep, bool ignoreForeignQueues, RideId queueRideIndex);
 
-    extern uint32_t gPathStat[8]; // trace profile, see GuestPathfinding.cpp
+    extern uint32_t gPathStat[12]; // trace profile, see GuestPathfinding.cpp
     int32_t CalculateNextDestination(Guest& peep);
 
     int32_t GuestPathFindParkEntranceEntering(Peep& peep, uint8_t edges);

@@ -51,6 +51,14 @@ namespace OpenRCT2::PathFinding
         int8_t junctionCount;
         int8_t maxJunctions;
         int32_t countTilesChecked;
+        // Memo of PathIsThinJunction per path element for the duration of one search: the map cannot change while a
+        // search runs, and a deep search re-enters the same junctions hundreds of times (each test walks up to four
+        // neighbouring tiles). Direct-mapped, keyed by the element's address.
+        struct ThinJunctionMemo
+        {
+            PathElement* element;
+            bool isThin;
+        } thinMemo[256];
         // TODO: Move them, those are query parameters not really state, but for now its easier to pass it down.
         bool ignoreForeignQueues;
         RideId queueRideIndex;
@@ -771,6 +779,7 @@ namespace OpenRCT2::PathFinding
             /* Look for all map elements that the peep could walk onto while
              * navigating to the goal, including the goal tile. */
 
+            gPathStat[10]++;
             if (tileElement->isGhost())
                 continue;
 
@@ -1049,7 +1058,28 @@ namespace OpenRCT2::PathFinding
             {
                 /* Check if this is a thin junction. And perform additional
                  * necessary checks. */
-                isThinJunction = PathIsThinJunction(tileElement->asPath(), loc);
+                {
+                    PathElement* pathElement = tileElement->asPath();
+                    auto& memo = state.thinMemo[(reinterpret_cast<uintptr_t>(pathElement) >> 3) & 255];
+                    if (memo.element == pathElement)
+                    {
+                        isThinJunction = memo.isThin;
+                    }
+                    else
+                    {
+#ifdef __amigaos__
+                        const unsigned tThin = amiga_ticks_us();
+                        isThinJunction = PathIsThinJunction(pathElement, loc);
+                        gPathStat[8]++;
+                        gPathStat[9] += amiga_ticks_us() - tThin;
+#else
+                        isThinJunction = PathIsThinJunction(pathElement, loc);
+#endif
+                        memo.element = pathElement;
+                        memo.isThin = isThinJunction;
+                    }
+                    gPathStat[11]++;
+                }
 
                 if (isThinJunction)
                 {
@@ -1224,7 +1254,7 @@ namespace OpenRCT2::PathFinding
      *  rct2: 0x0069A5F0
      */
     // trace profile (AmigaOS): [0] CalculateNextDestination calls, [1] its microseconds, [2] edge searches, [3] tiles checked
-    uint32_t gPathStat[8] = {}; // [4] searches that exhausted their tile budget, [5] tiles checked by those,
+    uint32_t gPathStat[12] = {}; // [8] thin-junction tests, [9] their microseconds, [10] tile elements iterated, [11] junctions visited // [4] searches that exhausted their tile budget, [5] tiles checked by those,
                                 // [6] ChooseDirection calls whose (tile, goal, junction limit) was seen within 8 ticks, [7] calls
 #ifdef __amigaos__
     static uint32_t sRecentKeys[1024];
