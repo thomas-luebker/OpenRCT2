@@ -104,6 +104,7 @@ namespace OpenRCT2
             TileInspectorPage tileInspectorPage;
         };
         uint16_t currentFrame{};        // updated every tic for motion in windows sprites
+        uint32_t lastTabInvalidateTick{}; // AmigaOS: animated tabs are invalidated every other tick only
         uint16_t listInformationType{}; // 0 for none
         int16_t pickedPeepFrame;        // Animation frame of picked peep in staff window and guest window
         int16_t selectedTab{};

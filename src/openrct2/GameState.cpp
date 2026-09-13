@@ -10,6 +10,7 @@
 #include "GameState.h"
 #include "platform/AmigaTrace.h"
 #include "core/String.hpp"
+#include "entity/Peep.h"
 #include "platform/Platform.h"
 
 #include "Game.h"
@@ -370,11 +371,33 @@ namespace OpenRCT2
         {
             AMIGA_TRACE(String::stdFormat(
                             "tick: per 40 ticks: date/scenario/weather/tiles %u, pathflags %u, peeps %u, vehicles %u, misc %u, rides %u, "
-                            "park/research/ratings %u, animations %u, sounds %u ms",
-                            tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6], tp[7], tp[8])
+                            "park/research/ratings %u, animations %u, sounds %u ms; %u guests in park",
+                            tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6], tp[7], tp[8], gameState.park.numGuestsInPark)
                             .c_str());
             for (auto& v : tp)
                 v = 0;
+            {
+                static const char* kStates[24] = { "falling",   "one",      "queuingFront", "onRide",    "leavingRide", "walking",
+                                                   "queuing",   "entering", "sitting",      "picked",    "patrolling",  "mowing",
+                                                   "sweeping",  "entPark",  "leavingPark",  "answering", "fixing",      "buying",
+                                                   "watching",  "emptyBin", "usingBin",     "watering",  "toInspect",   "inspecting" };
+                std::string line = "tick: guest update ms/calls by state:";
+                for (int n = 0; n < 5; n++)
+                {
+                    int best = -1;
+                    for (int st = 0; st < 32; st++)
+                        if (gPeepStateN[st] != 0 && (best < 0 || gPeepStateUs[st] > gPeepStateUs[best]))
+                            best = st;
+                    if (best < 0)
+                        break;
+                    line += std::string(" ") + (best < 24 ? kStates[best] : "?") + " " + std::to_string(gPeepStateUs[best] / 1000) + "/"
+                        + std::to_string(gPeepStateN[best]);
+                    gPeepStateN[best] = 0;
+                }
+                for (int st = 0; st < 32; st++)
+                    gPeepStateUs[st] = gPeepStateN[st] = 0;
+                AMIGA_TRACE(line.c_str());
+            }
         }
 #endif
 #undef TP

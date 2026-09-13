@@ -1299,6 +1299,20 @@ public:
         }
 
         const auto& widget = w.widgets[widgetIndex];
+#ifdef __amigaos__
+        if (widget.type == WidgetType::tab)
+        {
+            // Windows invalidate their animated tab on every tick although the tab image changes every 2-8 ticks,
+            // and each invalidation redraws the window (2-3 ms on a 68k). Every other tick is plenty; a state change
+            // arriving on a skipped tick shows one tick later.
+            const auto tick = getGameState().currentTicks;
+            if (tick != w.lastTabInvalidateTick && tick - w.lastTabInvalidateTick < 2)
+            {
+                return;
+            }
+            w.lastTabInvalidateTick = tick;
+        }
+#endif
         if (widget.left == -2)
             return;
 

@@ -9,6 +9,8 @@
 
 #include "Peep.h"
 
+#include "../platform/AmigaTrace.h"
+
 #include "../Context.h"
 #include "../Diagnostic.h"
 #include "../GameState.h"
@@ -187,6 +189,9 @@ namespace OpenRCT2
      *
      *  rct2: 0x0068F0A9
      */
+    uint32_t gPeepStateUs[32] = {};
+    uint32_t gPeepStateN[32] = {};
+
     void PeepUpdateAll()
     {
         PROFILED_FUNCTION();
@@ -208,7 +213,16 @@ namespace OpenRCT2
                 peep->tick128UpdateGuest(index);
             }
 
+#ifdef __amigaos__
+            // trace profile: microseconds per guest state, printed with the tick line
+            const unsigned t0 = amiga_ticks_us();
+            const auto state = static_cast<size_t>(peep->state) & 31;
             peep->update();
+            gPeepStateUs[state] += amiga_ticks_us() - t0;
+            gPeepStateN[state]++;
+#else
+            peep->update();
+#endif
 
             index++;
         }

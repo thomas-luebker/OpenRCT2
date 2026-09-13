@@ -468,6 +468,9 @@ namespace OpenRCT2
     };
 
     int32_t PeepGetStaffCount();
+    // trace profile (AmigaOS): microseconds and calls of Guest::update per PeepState
+    extern uint32_t gPeepStateUs[32];
+    extern uint32_t gPeepStateN[32];
     void PeepUpdateAll();
     void PeepUpdateAllBoundingBoxes();
     void PeepProblemWarningsUpdate();
