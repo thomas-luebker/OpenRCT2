@@ -9,6 +9,8 @@
 
 #include "Config.h"
 
+#include "../platform/AmigaTrace.h"
+
 #include "../Context.h"
 #include "../Date.h"
 #include "../Diagnostic.h"

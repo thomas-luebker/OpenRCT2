@@ -28,6 +28,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <mutex>
 #include <unordered_map>
 
 namespace OpenRCT2
@@ -387,8 +388,10 @@ namespace OpenRCT2
 
         // One directory scan instead of one to three filesystem probes per JSON object (an RCT2 scenario loads
         // ~560 of them): the RCT2 object directory does not change while the game runs.
+        static std::mutex cacheMutex; // objects load on several threads on other platforms
         static std::string cachedObjectsPath;
         static std::unordered_map<std::string, std::string> cachedFiles;
+        std::lock_guard<std::mutex> cacheLock(cacheMutex);
         if (cachedObjectsPath != objectsPath)
         {
             cachedFiles.clear();

@@ -103,7 +103,14 @@ namespace OpenRCT2::PathFinding
                 return;
 
             char buffer[256];
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wformat-security"
+#endif
             snprintf(buffer, sizeof(buffer), format, std::forward<TArgs>(args)...);
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
 
             if (peep != nullptr)
             {
@@ -1061,7 +1068,12 @@ namespace OpenRCT2::PathFinding
                 {
                     PathElement* pathElement = tileElement->asPath();
                     auto& memo = state.thinMemo[(reinterpret_cast<uintptr_t>(pathElement) >> 3) & 255];
-                    if (memo.element == pathElement)
+#ifdef __amigaos__
+                    static const bool noMemo = amiga_env_flag("OPENRCT2_NO_THINMEMO") != 0; // parity experiments
+#else
+                    constexpr bool noMemo = false;
+#endif
+                    if (!noMemo && memo.element == pathElement)
                     {
                         isThinJunction = memo.isThin;
                     }

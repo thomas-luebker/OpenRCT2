@@ -272,6 +272,25 @@ namespace OpenRCT2
                         v->next_vehicle_on_train.ToUnderlying(), v->prev_vehicle_on_ride.ToUnderlying(),
                         v->next_vehicle_on_ride.ToUnderlying(), v->BlockBrakeSpeed);
                 }
+                for (auto* g : EntityList<Guest>())
+                {
+                    std::fprintf(
+                        t,
+                        "guest id=%u xyz=%d,%d,%d o=%u next=%d,%d,%d nf=%u st=%u sub=%u act=%u afn=%u aio=%u step=%u "
+                        "wafn=%u dest=%d,%d,%u var37=%u goal=%d,%d,%d,%u hist=%d,%d,%d,%u;%d,%d,%d,%u;%d,%d,%d,%u;%d,%d,%d,%u "
+                        "toRide=%u curRide=%u lost=%u energy=%u flags=%08x pco=%u dir=%u\n",
+                        g->id.ToUnderlying(), g->x, g->y, g->z, g->orientation, g->nextLoc.x, g->nextLoc.y, g->nextLoc.z,
+                        g->nextFlags, static_cast<unsigned>(g->state), g->subState, static_cast<unsigned>(g->action),
+                        g->animationFrameNum, g->animationImageIdOffset, g->stepProgress, g->walkingAnimationFrameNum,
+                        g->destinationX, g->destinationY, g->destinationTolerance, g->var37, g->pathfindGoal.x,
+                        g->pathfindGoal.y, g->pathfindGoal.z, g->pathfindGoal.direction, g->pathfindHistory[0].x,
+                        g->pathfindHistory[0].y, g->pathfindHistory[0].z, g->pathfindHistory[0].direction, g->pathfindHistory[1].x,
+                        g->pathfindHistory[1].y, g->pathfindHistory[1].z, g->pathfindHistory[1].direction, g->pathfindHistory[2].x,
+                        g->pathfindHistory[2].y, g->pathfindHistory[2].z, g->pathfindHistory[2].direction, g->pathfindHistory[3].x,
+                        g->pathfindHistory[3].y, g->pathfindHistory[3].z, g->pathfindHistory[3].direction,
+                        g->guestHeadingToRideId.ToUnderlying(), g->currentRide.ToUnderlying(), g->guestIsLostCountdown,
+                        g->energy, static_cast<unsigned>(g->peepFlags.holder), g->pathCheckOptimisation, g->peepDirection);
+                }
                 for (auto& r : RideManager(getGameState()))
                 {
                     std::fprintf(
