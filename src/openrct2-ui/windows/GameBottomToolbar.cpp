@@ -17,6 +17,7 @@
 #include <openrct2/SpriteIds.h>
 #include <openrct2/drawing/Drawing.String.h>
 #include <openrct2/drawing/Drawing.h>
+#include <openrct2/config/Config.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/RenderTarget.h>
 #include <openrct2/drawing/Text.h>
@@ -326,7 +327,12 @@ namespace OpenRCT2::Ui::Windows
         {
             const auto& middleWidget = widgets[WIDX_PANEL_OUTSET];
 
-            if (ThemeGetFlags() & UITHEME_FLAG_USE_FULL_BOTTOM_TOOLBAR)
+            if (Config::Get().general.solidToolbars)
+            {
+                Rectangle::fillInset(
+                    rt, { windowPos, windowPos + ScreenCoordsXY{ width - 1, height - 1 } }, colours[0], Rectangle::BorderStyle::outset);
+            }
+            else if (ThemeGetFlags() & UITHEME_FLAG_USE_FULL_BOTTOM_TOOLBAR)
             {
                 // Draw grey background
                 auto leftTop = windowPos + ScreenCoordsXY{ middleWidget.left, middleWidget.top };
@@ -371,10 +377,12 @@ namespace OpenRCT2::Ui::Windows
         int32_t toolbarHeight = lineHeight * 2 + 12;
 
         auto* windowMgr = GetWindowManager();
+        auto flags = Config::Get().general.solidToolbars
+            ? WindowFlags{ WindowFlag::stickToFront, WindowFlag::noBackground, WindowFlag::noTitleBar }
+            : WindowFlags{ WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar };
         auto* window = windowMgr->Create<GameBottomToolbar>(
             WindowClass::bottomToolbar, ScreenCoordsXY(kPanelWidth, ContextGetHeight() - toolbarHeight),
-            { toolbarWidth, toolbarHeight },
-            { WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar });
+            { toolbarWidth, toolbarHeight }, flags);
 
         return window;
     }

@@ -28,6 +28,7 @@
 #include <openrct2/actions/general/PauseToggleAction.h>
 #include <openrct2/audio/Audio.h>
 #include <openrct2/config/Config.h>
+#include <openrct2/drawing/Rectangle.h>
 #include <openrct2/core/Numerics.hpp>
 #include <openrct2/core/String.hpp>
 #include <openrct2/drawing/Drawing.h>
@@ -1330,6 +1331,12 @@ namespace OpenRCT2::Ui::Windows
             const auto& gameState = getGameState();
             int32_t imgId;
 
+            if (Config::Get().general.solidToolbars)
+            {
+                Drawing::Rectangle::fillInset(
+                    rt, { windowPos, windowPos + ScreenCoordsXY{ width - 1, height - 1 } }, colours[0],
+                    Drawing::Rectangle::BorderStyle::outset);
+            }
             WindowDrawWidgets(*this, rt);
 
             ScreenCoordsXY screenPos{};
@@ -1463,9 +1470,11 @@ namespace OpenRCT2::Ui::Windows
     WindowBase* TopToolbarOpen()
     {
         auto* windowMgr = GetWindowManager();
+        auto flags = Config::Get().general.solidToolbars
+            ? WindowFlags{ WindowFlag::stickToFront, WindowFlag::noBackground, WindowFlag::noTitleBar }
+            : WindowFlags{ WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar };
         auto* window = windowMgr->Create<TopToolbar>(
-            WindowClass::topToolbar, ScreenCoordsXY(0, 0), { ContextGetWidth(), kTopToolbarHeight + 1 },
-            { WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar });
+            WindowClass::topToolbar, ScreenCoordsXY(0, 0), { ContextGetWidth(), kTopToolbarHeight + 1 }, flags);
 
         window->setWidgets(_topToolbarWidgets);
 

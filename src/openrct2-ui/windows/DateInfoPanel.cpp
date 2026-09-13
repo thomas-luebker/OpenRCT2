@@ -151,6 +151,11 @@ namespace OpenRCT2::Ui::Windows
 
         void onDraw(RenderTarget& rt) override
         {
+            if (Config::Get().general.solidToolbars)
+            {
+                Rectangle::fillInset(
+                    rt, { windowPos, windowPos + ScreenCoordsXY{ width - 1, height - 1 } }, colours[0], Rectangle::BorderStyle::outset);
+            }
             const auto& rightWidget = widgets[WIDX_PANEL_OUTSET];
 
             // Draw panel grey backgrounds
@@ -185,7 +190,9 @@ namespace OpenRCT2::Ui::Windows
         auto* window = windowMgr->Create<DateInfoPanel>(
             WindowClass::dateInfoPanel, ScreenCoordsXY(ContextGetWidth() - kPanelWidth - 1, ContextGetHeight() - panelHeight),
             { kPanelWidth, panelHeight },
-            { WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar });
+            Config::Get().general.solidToolbars
+                ? WindowFlags{ WindowFlag::stickToFront, WindowFlag::noBackground, WindowFlag::noTitleBar }
+                : WindowFlags{ WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar });
 
         return window;
     }

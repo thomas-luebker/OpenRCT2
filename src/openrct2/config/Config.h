@@ -63,6 +63,7 @@ namespace OpenRCT2::Config
         bool showGuestPurchases;
         bool transparentScreenshot;
         bool transparentWater;
+        bool solidToolbars; // opaque top and bottom bars: the viewport is never painted underneath them
 
         bool invisibleRides;
         bool invisibleVehicles;

@@ -233,6 +233,13 @@ struct PaintSession : public PaintSessionCore
 
 extern PaintSession gPaintSession;
 
+// Highest clearance (in z units = pixels) of any tile element in the map, plus whatever the tile walk has seen
+// since. Bounds how many tile rows below the viewport PaintSessionGenerate has to visit: the fixed allowance of
+// 2128 px (a tile stack of the maximum possible height) makes an 480 px viewport walk 81 rows per column, while
+// a real park rarely needs more than 30.
+extern int32_t gPaintMaxTileHeight;
+void PaintRecomputeMaxTileHeight();
+
 
 // Globals for paint clipping
 extern uint8_t gClipHeight;

@@ -959,6 +959,18 @@ namespace OpenRCT2::Ui
         }
         // Some windows need to be transparent even if the colours aren't.
         // There doesn't seem to be any side-effects for all windows being transparent
+        if (Config::Get().general.solidToolbars
+            && (classification == WindowClass::topToolbar || classification == WindowClass::bottomToolbar
+                || classification == WindowClass::parkInfoPanel || classification == WindowClass::dateInfoPanel))
+        {
+            // Opaque bars: on a slow CPU a transparent bar costs a full-width viewport paint underneath it on every
+            // scrolled frame. The RCT2 bottom bar uses translucent panel colours, so those become plain colours too.
+            for (int32_t i = 0; i < 6; i++)
+            {
+                window->colours[i].flags.unset(ColourFlag::translucent);
+            }
+            return;
+        }
         window->flags |= WindowFlag::transparent;
     }
 } // namespace OpenRCT2::Ui

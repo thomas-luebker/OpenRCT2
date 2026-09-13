@@ -15,6 +15,7 @@
     #include <openrct2/core/String.hpp>
     #include <openrct2/drawing/IDrawingEngine.h>
     #include <openrct2/drawing/X8DrawingEngine.h>
+    #include <openrct2/interface/Viewport.h>
     #include <openrct2/platform/AmigaTrace.h>
     #include <openrct2/ui/UiContext.h>
 
@@ -116,10 +117,14 @@ public:
             unsigned dt = now - t0;
             AMIGA_TRACE(
                 String::stdFormat(
-                    "gfx: %u frames in %u ms = %u.%02u fps; rasterise %u ms, blit %u ms for %lu kpx (%s)", frames, dt,
-                    dt ? frames * 1000u / dt : 0u, dt ? (frames * 100000u / dt) % 100u : 0u, _msRaster, _msBlit, _pxBlit / 1000ul,
-                    amiga_ui_blit_method() == 1 ? "direct" : "chunky")
+                    "gfx: %u frames in %u ms = %u.%02u fps; rasterise %u ms, blit %u ms for %lu kpx (%s); viewport paints %u: "
+                    "generate %u, sort %u, draw %u ms, %u columns",
+                    frames, dt, dt ? frames * 1000u / dt : 0u, dt ? (frames * 100000u / dt) % 100u : 0u, _msRaster, _msBlit,
+                    _pxBlit / 1000ul, amiga_ui_blit_method() == 1 ? "direct" : "chunky", gViewportPaintStat[0],
+                    gViewportPaintStat[1], gViewportPaintStat[2], gViewportPaintStat[3], gViewportPaintStat[4])
                     .c_str());
+            for (auto& v : gViewportPaintStat)
+                v = 0;
             frames = 0;
             t0 = now;
             _msRaster = _msBlit = 0;

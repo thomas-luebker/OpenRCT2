@@ -74,6 +74,9 @@ int amiga_env_flag(const char* name)
     return GetVar((STRPTR)name, (STRPTR)buf, sizeof(buf), 0) > 0 ? 1 : 0;
 }
 
+/* Set by the input shim on the first key press; lets trace experiments start logging when the tester acts. */
+int amiga_paint_log_armed = 0;
+
 /* Free memory in KB (all types), for the trace. */
 unsigned amiga_avail_kb(void)
 {

@@ -199,6 +199,10 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
         // We must pretend this tile is at least as tall as the virtual floor
         maxHeight = std::max(maxHeight, VirtualFloorGetHeight());
     }
+    if (maxHeight > gPaintMaxTileHeight)
+    {
+        gPaintMaxTileHeight = maxHeight; // something taller than the last full scan was built or loaded
+    }
 
     if (screenMinY - (maxHeight + 32) >= session.rt.WorldY() + session.rt.WorldHeight())
         return;

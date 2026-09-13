@@ -16,6 +16,7 @@
 #include <openrct2/Input.h>
 #include <openrct2/SpriteIds.h>
 #include <openrct2/drawing/Drawing.h>
+#include <openrct2/config/Config.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/Text.h>
 #include <openrct2/ui/WindowManager.h>
@@ -222,6 +223,11 @@ namespace OpenRCT2::Ui::Windows
 
         void onDraw(RenderTarget& rt) override
         {
+            if (Config::Get().general.solidToolbars)
+            {
+                Rectangle::fillInset(
+                    rt, { windowPos, windowPos + ScreenCoordsXY{ width - 1, height - 1 } }, colours[0], Rectangle::BorderStyle::outset);
+            }
             const auto& leftWidget = widgets[WIDX_PANEL_OUTSET];
 
             // Draw panel grey backgrounds
@@ -257,7 +263,9 @@ namespace OpenRCT2::Ui::Windows
         auto* windowMgr = GetWindowManager();
         auto* window = windowMgr->Create<ParkInfoPanel>(
             WindowClass::parkInfoPanel, ScreenCoordsXY(0, ContextGetHeight() - panelHeight), { kPanelWidth, panelHeight },
-            { WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar });
+            Config::Get().general.solidToolbars
+                ? WindowFlags{ WindowFlag::stickToFront, WindowFlag::noBackground, WindowFlag::noTitleBar }
+                : WindowFlags{ WindowFlag::stickToFront, WindowFlag::transparent, WindowFlag::noBackground, WindowFlag::noTitleBar });
 
         return window;
     }

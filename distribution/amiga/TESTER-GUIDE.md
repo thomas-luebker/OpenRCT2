@@ -45,6 +45,13 @@ Scrolling with the mouse at the screen edge or with the arrow keys now moves the
 amount per second whatever the frame rate. Earlier builds moved one fixed step per drawn frame, which
 crawled at 15 fps and jumped at the map edge.
 
+## 2d. Solid toolbars
+
+The top toolbar and the bottom bar are drawn opaque on the Amiga (`solid_toolbars = true` in
+`user/config.ini`). With the transparent bars of the PC version the landscape underneath both bars
+had to be painted again on every scrolled frame, which cost about a third of the scrolling frame
+rate. Set `solid_toolbars = false` if you prefer the transparent look.
+
 ## 3. Install the game
 
 1. Extract the archive where there is room, e.g. `Work:Games/`. In a Shell:

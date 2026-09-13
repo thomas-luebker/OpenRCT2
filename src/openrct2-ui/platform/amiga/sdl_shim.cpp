@@ -7,6 +7,8 @@
     #include "AmigaWindow.h"
     #include "amiga_audio.h"
     #include "amiga_ui.h"
+
+#include <openrct2/platform/AmigaTrace.h>
     #include "sdl2/SDL.h"
 
     #include <cctype>
@@ -17,7 +19,6 @@
     #include <string>
 
 extern "C" unsigned amiga_ticks_ms(void);
-extern "C" void amiga_trace(const char* line);
 
 namespace
 {
@@ -270,6 +271,8 @@ namespace
                         break;
                     g_keyState[sc] = up ? 0 : 1;
                     e.type = up ? SDL_KEYUP : SDL_KEYDOWN;
+                    if (!up)
+                        amiga_paint_log_armed = 1; // trace experiments start logging at the tester's first key press
                     e.key.timestamp = amiga_ticks_ms();
                     e.key.state = up ? 0 : 1;
                     e.key.repeat = (ev.qual & kIEQ_REPEAT) ? 1 : 0;

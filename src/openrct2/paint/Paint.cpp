@@ -9,6 +9,10 @@
 
 #include "Paint.h"
 
+#include "../platform/AmigaTrace.h"
+#include "../world/Map.h"
+#include "../world/tile_element/SurfaceElement.h"
+
 #include "../Context.h"
 #include "../config/Config.h"
 #include "../core/Money.hpp"
@@ -34,6 +38,27 @@
 using namespace OpenRCT2;
 using namespace OpenRCT2::Drawing;
 using namespace OpenRCT2::Numerics;
+
+
+int32_t gPaintMaxTileHeight = 2040;
+
+void PaintRecomputeMaxTileHeight()
+{
+    int32_t maxHeight = 0;
+    TileElementIterator it;
+    TileElementIteratorBegin(&it);
+    do
+    {
+        const auto* element = it.element;
+        maxHeight = std::max(maxHeight, static_cast<int32_t>(element->getClearanceZ()));
+        if (element->getType() == TileElementType::surface)
+        {
+            maxHeight = std::max(maxHeight, static_cast<int32_t>(element->asSurface()->getWaterHeight()));
+        }
+    } while (TileElementIteratorNext(&it));
+    gPaintMaxTileHeight = maxHeight;
+    AMIGA_TRACE((std::string("paint: max tile height in this map ") + std::to_string(maxHeight) + " px").c_str());
+}
 
 // Globals for paint clipping
 uint8_t gClipHeight = 128; // Default to middle value
@@ -283,7 +308,14 @@ void PaintSessionGenerateRotate(PaintSession& session)
     }
     mapTile = mapTile.toTileStart();
 
+#ifdef __amigaos__
+    // Rows below the viewport that can still reach into it: bounded by the tallest thing in the park (plus sprite
+    // overhang and entities floating above their tile) instead of the theoretical maximum. Halves the tile walk.
+    const int32_t allowance = std::min<int32_t>(2128, gPaintMaxTileHeight + 128);
+    uint16_t numVerticalTiles = static_cast<uint16_t>((session.rt.WorldHeight() + allowance) >> 5);
+#else
     uint16_t numVerticalTiles = (session.rt.WorldHeight() + 2128) >> 5;
+#endif
 
     // Adjacent tiles to also check due to overlapping of sprites
     constexpr CoordsXY adjacentTiles[] = {

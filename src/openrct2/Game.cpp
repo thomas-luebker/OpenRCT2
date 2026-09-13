@@ -10,6 +10,7 @@
 #include "Game.h"
 
 #include "Context.h"
+#include "paint/Paint.h"
 #include "Diagnostic.h"
 #include "GameState.h"
 #include "GameStateSnapshots.h"
@@ -418,6 +419,7 @@ void GameNotifyMapChange()
 
 void GameNotifyMapChanged()
 {
+    PaintRecomputeMaxTileHeight();
 #ifdef ENABLE_SCRIPTING
     using namespace OpenRCT2::Scripting;
 

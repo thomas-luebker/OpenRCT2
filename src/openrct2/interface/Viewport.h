@@ -29,6 +29,9 @@ namespace OpenRCT2::Drawing
 
 namespace OpenRCT2
 {
+    // Trace profile: viewport paints, generate ms, sort ms, draw ms, columns (reset by the drawing engine's gfx line).
+    extern uint32_t gViewportPaintStat[5];
+
     struct EntityBase;
     struct Guest;
     struct TileElement;

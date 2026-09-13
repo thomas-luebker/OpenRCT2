@@ -440,6 +440,15 @@ namespace OpenRCT2
             if (left >= right || top >= bottom)
                 continue;
 
+#ifdef __amigaos__
+            if (amiga_paint_log_armed && amiga_env_flag("OPENRCT2_PAINT_LOG"))
+            {
+                AMIGA_TRACE((std::string("shift: transparent window class ") + std::to_string(static_cast<int>(w->classification))
+                             + " flags " + std::to_string(w->flags.holder) + " redraw " + std::to_string(left) + "," + std::to_string(top)
+                             + " " + std::to_string(right - left) + "x" + std::to_string(bottom - top))
+                                .c_str());
+            }
+#endif
             WindowDrawAll(rt, left, top, right, bottom);
         }
 
@@ -838,6 +847,7 @@ namespace OpenRCT2
     }
 
     static uint32_t sArrangeMs = 0; // trace: share of ViewportFillColumn spent sorting
+    uint32_t gViewportPaintStat[5] = { 0, 0, 0, 0, 0 };
 
     static void ViewportFillColumn(PaintSession& session)
     {
@@ -933,8 +943,7 @@ namespace OpenRCT2
         const int32_t rightBorder = worldRT.x + worldRT.width;
         const int32_t alignedX = floor2(worldRT.x, columnWidth);
 
-        // Trace-gated paint profile: where the rasterise time goes (tile walk + sort vs sprite drawing).
-        static uint32_t sPaintStat[4] = { 0, 0, 0, 0 }; // paints, fill ms, draw ms, columns
+        // Trace-gated paint profile (paints, generate ms, sort ms, draw ms, columns); printed with the gfx line.
         const uint32_t tFill = Platform::GetTicks();
 
         // Generate and sort columns.
@@ -1003,19 +1012,28 @@ namespace OpenRCT2
         {
             _paintJobs->Join();
         }
-        sPaintStat[0]++;
-        sPaintStat[1] += tDraw - tFill;
-        sPaintStat[2] += Platform::GetTicks() - tDraw;
-        sPaintStat[3] += static_cast<uint32_t>(_paintColumns.size());
-        if (sPaintStat[0] == 200)
+#ifdef __amigaos__
         {
-            AMIGA_TRACE((std::string("paint: per 200 viewport paints: generate ") + std::to_string(sPaintStat[1] - sArrangeMs) + " ms, sort "
-                         + std::to_string(sArrangeMs) + " ms, draw sprites " + std::to_string(sPaintStat[2]) + " ms, "
-                         + std::to_string(sPaintStat[3]) + " columns")
-                            .c_str());
-            sPaintStat[0] = sPaintStat[1] = sPaintStat[2] = sPaintStat[3] = 0;
-            sArrangeMs = 0;
+            // OPENRCT2_PAINT_LOG: one trace line per viewport paint (rect, columns, ms) for the first 600 paints.
+            static const bool logPaints = amiga_env_flag("OPENRCT2_PAINT_LOG") != 0;
+            static uint32_t logged = 0;
+            if (logPaints && amiga_paint_log_armed && logged < 400)
+            {
+                logged++;
+                AMIGA_TRACE((std::string("paint: rect ") + std::to_string(rt.x) + "," + std::to_string(rt.y) + " "
+                             + std::to_string(rt.width) + "x" + std::to_string(rt.height) + " cols "
+                             + std::to_string(_paintColumns.size()) + " gen " + std::to_string(tDraw - tFill) + " draw "
+                             + std::to_string(Platform::GetTicks() - tDraw) + " ms")
+                                .c_str());
+            }
         }
+#endif
+        gViewportPaintStat[0]++;
+        gViewportPaintStat[1] += tDraw - tFill - sArrangeMs;
+        gViewportPaintStat[2] += sArrangeMs;
+        gViewportPaintStat[3] += Platform::GetTicks() - tDraw;
+        gViewportPaintStat[4] += static_cast<uint32_t>(_paintColumns.size());
+        sArrangeMs = 0;
 
         // Release resources.
         for (auto* session : _paintColumns)
