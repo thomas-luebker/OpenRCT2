@@ -234,6 +234,14 @@ void SDL_amiga_AudioPump(void)
             g_dumpReported = g_dumpBuffers;
             std::fflush(g_dumpFile);
         }
+        if (g_dumpFile != nullptr && g_dumpBuffers >= 400)
+        {
+            // ~37 s of audio is plenty for a check, and AmigaDOS keeps an open file locked: close it so a tester
+            // (or the release check) can read it while the game keeps running.
+            std::fclose(g_dumpFile);
+            g_dumpFile = nullptr;
+            amiga_trace("audio: dump closed after 400 buffers");
+        }
         g_inPump = false;
         return;
     }
