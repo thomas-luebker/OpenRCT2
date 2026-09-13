@@ -1034,6 +1034,16 @@ namespace OpenRCT2
         gViewportPaintStat[3] += Platform::GetTicks() - tDraw;
         gViewportPaintStat[4] += static_cast<uint32_t>(_paintColumns.size());
         sArrangeMs = 0;
+#ifdef __amigaos__
+        {
+            static bool init = false;
+            if (!init)
+            {
+                init = true;
+                gPaintProfEnabled = amiga_env_flag("OPENRCT2_PAINT_PROF") != 0;
+            }
+        }
+#endif
 
         // Release resources.
         for (auto* session : _paintColumns)

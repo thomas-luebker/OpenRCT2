@@ -21,7 +21,7 @@ scenario and while scrolling, and the simulation cost of a park with 1,500 guest
 | OS | AmigaOS 3.2 (tested on 3.2.3). Other 3.x may work, untested. |
 | Graphics | An RTG card with a **Picasso96 or CyberGraphX** driver offering an **8-bit 640×480** mode. AGA/ECS-only machines are not supported. |
 | CPU | 68040/68060, **PiStorm** (Emu68) or **Vampire/Apollo**. Tested on an emulated 68040. A 68020/030 runs it, slowly. No FPU needed. |
-| RAM | About **300 MB free Fast RAM** (the game uses ~256 MB). 512 MB recommended. |
+| RAM | About **320 MB free Fast RAM** for a normal park; a very large park with 1,500 guests reaches ~240 MB and its autosave temporarily needs ~75 MB more, so 512 MB is recommended. If memory is tight, set `autosave = 5` (never) in `user/config.ini`. |
 | Disk | ~80 MB for the game, plus your RCT2 data (~150 MB, or ~630 MB with all the ride music). |
 | RCT2 data | The **original RollerCoaster Tycoon 2** files (GOG, Steam or CD). Not included, not redistributable. |
 | Sound | **AHI** installed, with unit 0 configured (optional: the game is silent without it). |

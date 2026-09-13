@@ -17,6 +17,7 @@
     #include <openrct2/drawing/X8DrawingEngine.h>
     #include <openrct2/interface/Viewport.h>
     #include <openrct2/interface/Window.h>
+    #include <openrct2/paint/Paint.h>
     #include <openrct2/platform/AmigaTrace.h>
     #include <openrct2/ui/UiContext.h>
 
@@ -126,6 +127,27 @@ public:
                     .c_str());
             for (auto& v : gViewportPaintStat)
                 v = 0;
+            {
+                unsigned long footprint = 0, inUse = 0;
+                amiga_malloc_stats(&footprint, &inUse);
+                AMIGA_TRACE(String::stdFormat(
+                                "heap: footprint %lu KB, in use %lu KB, free system memory %u KB", footprint / 1024, inUse / 1024,
+                                amiga_avail_kb())
+                                .c_str());
+            }
+            if (gPaintProfEnabled)
+            {
+                static const char* kNames[10] = { "surface", "path",    "track",  "smallScenery", "entrance",
+                                                  "wall",    "largeSc", "banner", "tileSetup",    "entities" };
+                std::string line = "paint: sampled ms/calls by type:";
+                for (int i = 0; i < 10; i++)
+                {
+                    line += std::string(" ") + kNames[i] + " " + std::to_string(gPaintProfUs[i] * 16 / 1000) + "/"
+                        + std::to_string(gPaintProfN[i]);
+                    gPaintProfUs[i] = gPaintProfN[i] = 0;
+                }
+                AMIGA_TRACE(line.c_str());
+            }
             {
                 // the four window classes that cost the most drawing time in this period
                 std::string line = "gfx: window draw ms/calls by class:";

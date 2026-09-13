@@ -728,6 +728,24 @@ namespace OpenRCT2::PathFinding
      *
      *  rct2: 0x0069A997
      */
+    struct ScanEntry
+    {
+        TileElement* element;
+        RideId rideIndex;
+        uint8_t searchResult;
+        uint8_t z;
+    };
+    static constexpr int kScanMemoEntries = 4;
+    struct ScanMemo
+    {
+        uint32_t generation;
+        uint32_t key;
+        uint8_t count;
+        ScanEntry entries[kScanMemoEntries];
+    };
+    static ScanMemo sScanMemo[256]; // per-search memo of a tile's relevant elements (see the search)
+    static uint32_t sSearchGeneration = 0;
+
     static void PeepPathfindHeuristicSearch(
         PathFindingState& state, TileCoordsXYZ loc, const TileCoordsXYZ& goal, const Peep& peep,
         TileElement* currentTileElement, const bool inPatrolArea, uint8_t numSteps, uint16_t* endScore, Direction testEdge,
@@ -776,138 +794,190 @@ namespace OpenRCT2::PathFinding
 
         /* Get the next map element of interest in the direction of testEdge. */
         bool found = false;
-        TileElement* tileElement = MapGetFirstElementAt(loc);
-        if (tileElement == nullptr)
+        TileElement* firstElement = MapGetFirstElementAt(loc);
+        if (firstElement == nullptr)
         {
             return;
         }
-        do
-        {
-            /* Look for all map elements that the peep could walk onto while
-             * navigating to the goal, including the goal tile. */
-
-            gPathStat[10]++;
-            if (tileElement->isGhost())
-                continue;
-
-            RideId rideIndex = RideId::GetNull();
-            switch (tileElement->getType())
+        // The elements of a tile that matter for a given entry height and edge do not change during one search, and
+        // a deep search re-enters the same tile many times (each visit walked ~7 elements). The scan below is either
+        // replayed from a per-search memo or run once and memoised; the candidates are then processed in the same
+        // order as before, with the same height updates.
+        auto scanFrom = [&](TileElement* start, ScanEntry* out, int cap, int& n) -> TileElement* {
+            n = 0;
+            TileElement* tileElement = start;
+            do
             {
-                case TileElementType::track:
-                {
-                    if (loc.z != tileElement->baseHeight)
-                        continue;
-                    /* For peeps heading for a shop, the goal is the shop
-                     * tile. */
-                    rideIndex = tileElement->asTrack()->getRideIndex();
-                    auto ride = GetRide(rideIndex);
-                    if (ride == nullptr || !ride->getRideTypeDescriptor().flags.has(RtdFlag::isShopOrFacility))
-                        continue;
+                if (n == cap)
+                    return tileElement; // resume from here in the next batch
+                /* Look for all map elements that the peep could walk onto while
+                 * navigating to the goal, including the goal tile. */
 
-                    found = true;
-                    searchResult = PathSearchResult::shopEntrance;
-                    break;
-                }
-                case TileElementType::entrance:
-                    if (loc.z != tileElement->baseHeight)
-                        continue;
-                    Direction direction;
-                    searchResult = PathSearchResult::other;
-                    switch (tileElement->asEntrance()->getEntranceType())
-                    {
-                        case EntranceType::rideEntrance:
-                            /* For peeps heading for a ride without a queue, the
-                             * goal is the ride entrance tile.
-                             * For mechanics heading for the ride entrance
-                             * (in the case when the station has no exit),
-                             * the goal is the ride entrance tile. */
-                            direction = tileElement->getDirection();
-                            if (direction == testEdge)
-                            {
-                                /* The rideIndex will be useful for
-                                 * adding transport rides later. */
-                                rideIndex = tileElement->asEntrance()->getRideIndex();
-                                searchResult = PathSearchResult::rideEntrance;
-                                found = true;
-                                break;
-                            }
-                            continue; // Ride entrance is not facing the right direction.
-                        case EntranceType::parkEntrance:
-                            /* For peeps leaving the park, the goal is the park
-                             * entrance/exit tile. */
-                            searchResult = PathSearchResult::parkExit;
-                            found = true;
-                            break;
-                        case EntranceType::rideExit:
-                            /* For mechanics heading for the ride exit, the
-                             * goal is the ride exit tile. */
-                            direction = tileElement->getDirection();
-                            if (direction == testEdge)
-                            {
-                                searchResult = PathSearchResult::rideExit;
-                                found = true;
-                                break;
-                            }
-                            continue; // Ride exit is not facing the right direction.
-                        default:
-                            continue;
-                    }
-                    break;
-                case TileElementType::path:
-                {
-                    const auto* pathElement = tileElement->asPath();
-                    /* For peeps heading for a ride with a queue, the goal is the last
-                     * queue path.
-                     * Otherwise, peeps walk on path tiles to get to the goal. */
-                    if (!FootpathIsZAndDirectionValid(*pathElement, loc.z, testEdge))
-                        continue;
-
-                    // Path may be sloped, so set z to path base height.
-                    loc.z = tileElement->baseHeight;
-
-                    if (pathElement->isWide())
-                    {
-                        /* Check if staff can ignore this wide flag. */
-                        if (staff == nullptr || !staff->canIgnoreWideFlag(loc.toCoordsXYZ(), tileElement))
-                        {
-                            searchResult = PathSearchResult::wide;
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    searchResult = PathSearchResult::thin;
-
-                    uint8_t numEdges = std::popcount(pathElement->getEdges());
-
-                    if (numEdges < 2)
-                    {
-                        searchResult = PathSearchResult::deadEnd;
-                    }
-                    else if (numEdges > 2)
-                    {
-                        searchResult = PathSearchResult::junction;
-                    }
-                    else
-                    { // numEdges == 2
-                        if (pathElement->isQueue() && pathElement->getRideIndex() != state.queueRideIndex)
-                        {
-                            if (state.ignoreForeignQueues && !pathElement->getRideIndex().IsNull())
-                            {
-                                // Path is a queue we aren't interested in
-                                /* The rideIndex will be useful for
-                                 * adding transport rides later. */
-                                rideIndex = pathElement->getRideIndex();
-                                searchResult = PathSearchResult::rideQueue;
-                            }
-                        }
-                    }
-                    found = true;
-                }
-                break;
-                default:
+                gPathStat[10]++;
+                if (tileElement->isGhost())
                     continue;
+
+                RideId rideIndex = RideId::GetNull();
+                switch (tileElement->getType())
+                {
+                    case TileElementType::track:
+                    {
+                        if (loc.z != tileElement->baseHeight)
+                            continue;
+                        /* For peeps heading for a shop, the goal is the shop
+                         * tile. */
+                        rideIndex = tileElement->asTrack()->getRideIndex();
+                        auto ride = GetRide(rideIndex);
+                        if (ride == nullptr || !ride->getRideTypeDescriptor().flags.has(RtdFlag::isShopOrFacility))
+                            continue;
+
+                        found = true;
+                        searchResult = PathSearchResult::shopEntrance;
+                        break;
+                    }
+                    case TileElementType::entrance:
+                        if (loc.z != tileElement->baseHeight)
+                            continue;
+                        Direction direction;
+                        searchResult = PathSearchResult::other;
+                        switch (tileElement->asEntrance()->getEntranceType())
+                        {
+                            case EntranceType::rideEntrance:
+                                /* For peeps heading for a ride without a queue, the
+                                 * goal is the ride entrance tile.
+                                 * For mechanics heading for the ride entrance
+                                 * (in the case when the station has no exit),
+                                 * the goal is the ride entrance tile. */
+                                direction = tileElement->getDirection();
+                                if (direction == testEdge)
+                                {
+                                    /* The rideIndex will be useful for
+                                     * adding transport rides later. */
+                                    rideIndex = tileElement->asEntrance()->getRideIndex();
+                                    searchResult = PathSearchResult::rideEntrance;
+                                    found = true;
+                                    break;
+                                }
+                                continue; // Ride entrance is not facing the right direction.
+                            case EntranceType::parkEntrance:
+                                /* For peeps leaving the park, the goal is the park
+                                 * entrance/exit tile. */
+                                searchResult = PathSearchResult::parkExit;
+                                found = true;
+                                break;
+                            case EntranceType::rideExit:
+                                /* For mechanics heading for the ride exit, the
+                                 * goal is the ride exit tile. */
+                                direction = tileElement->getDirection();
+                                if (direction == testEdge)
+                                {
+                                    searchResult = PathSearchResult::rideExit;
+                                    found = true;
+                                    break;
+                                }
+                                continue; // Ride exit is not facing the right direction.
+                            default:
+                                continue;
+                        }
+                        break;
+                    case TileElementType::path:
+                    {
+                        const auto* pathElement = tileElement->asPath();
+                        /* For peeps heading for a ride with a queue, the goal is the last
+                         * queue path.
+                         * Otherwise, peeps walk on path tiles to get to the goal. */
+                        if (!FootpathIsZAndDirectionValid(*pathElement, loc.z, testEdge))
+                            continue;
+
+                        // Path may be sloped, so set z to path base height.
+                        loc.z = tileElement->baseHeight;
+
+                        if (pathElement->isWide())
+                        {
+                            /* Check if staff can ignore this wide flag. */
+                            if (staff == nullptr || !staff->canIgnoreWideFlag(loc.toCoordsXYZ(), tileElement))
+                            {
+                                searchResult = PathSearchResult::wide;
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        searchResult = PathSearchResult::thin;
+
+                        uint8_t numEdges = std::popcount(pathElement->getEdges());
+
+                        if (numEdges < 2)
+                        {
+                            searchResult = PathSearchResult::deadEnd;
+                        }
+                        else if (numEdges > 2)
+                        {
+                            searchResult = PathSearchResult::junction;
+                        }
+                        else
+                        { // numEdges == 2
+                            if (pathElement->isQueue() && pathElement->getRideIndex() != state.queueRideIndex)
+                            {
+                                if (state.ignoreForeignQueues && !pathElement->getRideIndex().IsNull())
+                                {
+                                    // Path is a queue we aren't interested in
+                                    /* The rideIndex will be useful for
+                                     * adding transport rides later. */
+                                    rideIndex = pathElement->getRideIndex();
+                                    searchResult = PathSearchResult::rideQueue;
+                                }
+                            }
+                        }
+                        found = true;
+                    }
+                    break;
+                    default:
+                        continue;
+                }
+                out[n].element = tileElement;
+                out[n].rideIndex = rideIndex;
+                out[n].searchResult = static_cast<uint8_t>(searchResult);
+                out[n].z = static_cast<uint8_t>(loc.z);
+                n++;
+            } while (!(tileElement++)->isLastForTile());
+            return nullptr;
+        };
+        const uint32_t scanKey = (static_cast<uint32_t>(loc.x) & 0x3FFu) | ((static_cast<uint32_t>(loc.y) & 0x3FFu) << 10)
+            | ((static_cast<uint32_t>(loc.z) & 0xFFu) << 20) | (static_cast<uint32_t>(testEdge & 3u) << 28) | 0x80000000u;
+        ScanMemo& scanMemo = sScanMemo[(scanKey * 2654435761u) >> 24];
+        TileElement* batch = firstElement;
+        ScanEntry cands[16];
+        int numCands = 0;
+        if (scanMemo.generation == sSearchGeneration && scanMemo.key == scanKey)
+        {
+            numCands = scanMemo.count;
+            for (int i = 0; i < numCands; i++)
+                cands[i] = scanMemo.entries[i];
+            batch = nullptr;
+        }
+        else
+        {
+            TileElement* resume = scanFrom(batch, cands, 16, numCands);
+            if (resume == nullptr && numCands <= kScanMemoEntries)
+            {
+                scanMemo.generation = sSearchGeneration;
+                scanMemo.key = scanKey;
+                scanMemo.count = static_cast<uint8_t>(numCands);
+                for (int i = 0; i < numCands; i++)
+                    scanMemo.entries[i] = cands[i];
             }
+            batch = resume;
+        }
+        for (;;)
+        {
+        for (int ci = 0; ci < numCands; ci++)
+        {
+            TileElement* tileElement = cands[ci].element;
+            loc.z = cands[ci].z;
+            searchResult = static_cast<PathSearchResult>(cands[ci].searchResult);
+            found = true;
+
 
             LogPathfinding(
                 &peep, "Checking map element at %d,%d,%d; Type: %s; Steps: %u", loc.x >> 5, loc.y >> 5, loc.z,
@@ -1241,7 +1311,12 @@ namespace OpenRCT2::PathFinding
                     nextTestEdge, *endScore);
             } while ((nextTestEdge = Numerics::bitScanForward(edges)) != -1);
 
-        } while (!(tileElement++)->isLastForTile());
+        }
+        if (batch == nullptr)
+            break;
+        batch = scanFrom(batch, cands, 16, numCands);
+        }
+
 
         if (!found)
         {
@@ -1279,6 +1354,8 @@ namespace OpenRCT2::PathFinding
         PROFILED_FUNCTION();
 
         PathFindingState state{};
+        if (++sSearchGeneration == 0)
+            ++sSearchGeneration; // 0 marks an empty memo slot
 
         state.ignoreForeignQueues = ignoreForeignQueues;
         state.queueRideIndex = queueRideIndex;

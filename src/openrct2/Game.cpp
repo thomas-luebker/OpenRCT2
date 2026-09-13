@@ -10,6 +10,7 @@
 #include "Game.h"
 
 #include "Context.h"
+#include "platform/AmigaTrace.h"
 #include "paint/Paint.h"
 #include "Diagnostic.h"
 #include "GameState.h"
@@ -593,6 +594,7 @@ static void LimitAutosaveCount(const size_t numberOfFilesToKeep, bool processLan
 
 void GameAutosave()
 {
+    AMIGA_TRACE("park: autosave");
     auto subDirectory = DirId::saves;
     const char* fileExtension = ".park";
     uint32_t saveFlags = 0x80000000;
@@ -636,6 +638,7 @@ void GameAutosave()
 #else
 void GameAutosave()
 {
+    AMIGA_TRACE("park: autosave");
     const auto savePath = Path::WithExtension("save", ".park");
     SaveGameWithName(savePath);
     EmscriptenSaveGame(false, true, LoadSaveType::park);

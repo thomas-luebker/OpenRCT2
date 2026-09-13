@@ -46,6 +46,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
 void TileElementPaintSetup(PaintSession& session, const CoordsXY& mapCoords, bool isTrackPiecePreview)
 {
     PROFILED_FUNCTION();
+    PAINT_PROF_SCOPE(8);
 
     if (!MapIsEdge(mapCoords))
     {
@@ -271,6 +272,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
         CoordsXY mapPosition = session.MapPosition;
         session.CurrentlyDrawnTileElement = tile_element;
         // Setup the painting of for example: the underground, signs, rides, scenery, etc.
+        PAINT_PROF_SCOPE(static_cast<int>(tile_element->getType()) & 7);
         switch (tile_element->getType())
         {
             case TileElementType::surface:

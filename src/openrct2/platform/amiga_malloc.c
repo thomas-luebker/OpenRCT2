@@ -18,7 +18,7 @@
 #define MORECORE_CONTIGUOUS 0
 #define MORECORE_CANNOT_TRIM 1
 #define USE_LOCKS 0
-#define NO_MALLINFO 1
+#define NO_MALLINFO 0
 #define NO_MALLOC_STATS 1
 #define malloc_getpagesize 4096
 #define DEFAULT_GRANULARITY (1024UL * 1024UL)
@@ -52,6 +52,27 @@ static void* amiga_morecore(long n)
         struct amiga_step* s = (struct amiga_step*)AllocMem(size, MEMF_ANY);
         if (s == NULL)
             return (void*)-1;
+        if (n >= 4L * 1024L * 1024L)
+        {
+            char line[80];
+            unsigned long kb = (unsigned long)n / 1024UL, d = 100000000UL;
+            int i = 0;
+            const char* pfx = "heap: morecore ";
+            while (*pfx)
+                line[i++] = *pfx++;
+            while (d > kb && d > 1)
+                d /= 10;
+            while (d > 0)
+            {
+                line[i++] = (char)('0' + (kb / d) % 10);
+                d /= 10;
+            }
+            pfx = " KB";
+            while (*pfx)
+                line[i++] = *pfx++;
+            line[i] = 0;
+            amiga_trace(line);
+        }
         s->size = size;
         s->next = g_steps;
         g_steps = s;
@@ -69,6 +90,14 @@ void* realloc(void* p, size_t n) { return dlrealloc(p, n); }
 void* memalign(size_t a, size_t n) { return dlmemalign(a, n); }
 int posix_memalign(void** pp, size_t a, size_t n) { return dlposix_memalign(pp, a, n); }
 size_t malloc_usable_size(void* p) { return dlmalloc_usable_size(p); }
+
+/* Heap statistics for the trace: bytes obtained from the system and bytes currently allocated by the program. */
+void amiga_malloc_stats(unsigned long* footprint, unsigned long* inUse)
+{
+    struct mallinfo mi = dlmallinfo();
+    *footprint = (unsigned long)dlmalloc_footprint();
+    *inUse = (unsigned long)mi.uordblks;
+}
 
 /* Runs after every other destructor (priority 101 = first constructor, last destructor). */
 __attribute__((destructor(101))) static void amiga_malloc_cleanup(void)

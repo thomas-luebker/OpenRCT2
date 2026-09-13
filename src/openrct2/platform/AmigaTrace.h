@@ -6,6 +6,7 @@ extern "C" unsigned amiga_avail_kb(void);
 extern "C" unsigned amiga_ticks_us(void);
 extern "C" int amiga_env_flag(const char* name);
 extern "C" int amiga_paint_log_armed;
+extern "C" void amiga_malloc_stats(unsigned long* footprint, unsigned long* inUse);
     #define AMIGA_TRACE(msg) amiga_trace(msg)
     #define AMIGA_TRACE_ONCE(msg)                                                                                              \
         do                                                                                                                     \

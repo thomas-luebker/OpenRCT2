@@ -35,6 +35,10 @@
 #include <algorithm>
 #include <array>
 
+uint32_t gPaintProfUs[10] = {};
+uint32_t gPaintProfN[10] = {};
+bool gPaintProfEnabled = false;
+
 using namespace OpenRCT2;
 using namespace OpenRCT2::Drawing;
 using namespace OpenRCT2::Numerics;

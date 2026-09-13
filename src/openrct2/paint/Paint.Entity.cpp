@@ -44,6 +44,7 @@ using namespace OpenRCT2::Drawing;
 void EntityPaintSetup(PaintSession& session, const CoordsXY& pos)
 {
     PROFILED_FUNCTION();
+    PAINT_PROF_SCOPE(9);
 #ifdef __amigaos__
     static const bool skip = amiga_env_flag("OPENRCT2_SKIP_ENTITIES") != 0; // measurement aid, not a feature
     if (skip)
