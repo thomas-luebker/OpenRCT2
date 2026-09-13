@@ -11,6 +11,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 UP="$(cd "$HERE/../.." && pwd)"          # upstream checkout (git)
 PROJ="$(cd "$UP/.." && pwd)"             # amiopenrtc2 project root
 BIN="${BIN:-$PROJ/build-68k/openrct2}"
+BIN_O2="${BIN_O2:-$PROJ/build-68k-o2/openrct2}"   # optional: same sources built with -O2 (smaller code for real 68060/68080 caches)
 DATA="${DATA:-$PROJ/dist/OpenRCT2/data}"
 TAG="${TAG:-test1}"
 SHA="$(git -C "$UP" log -1 --format=%h)"
@@ -22,6 +23,7 @@ LHACLI="$HOME/Development/AmigaDiskKit/.build/arm64-apple-macosx/release/AmigaDi
 [ -d "$DATA" ] || { echo "no data at $DATA (run spike/stage-dist.sh first)"; exit 1; }
 rm -rf "$STAGE"; mkdir -p "$STAGE/OpenRCT2/bin" "$STAGE/OpenRCT2/user"
 cp "$BIN" "$STAGE/OpenRCT2/bin/openrct2"
+[ -f "$BIN_O2" ] && cp "$BIN_O2" "$STAGE/OpenRCT2/bin/openrct2-o2"
 cp -R "$DATA" "$STAGE/OpenRCT2/data"
 cp "$HERE/OpenRCT2" "$STAGE/OpenRCT2/OpenRCT2"
 cp "$HERE/OpenRCT2-launcher.info" "$STAGE/OpenRCT2/OpenRCT2.info"
@@ -41,6 +43,7 @@ ls -la "$OUT/$NAME.lha"; du -sh "$STAGE"
 UPD="$OUT/stage-update"
 rm -rf "$UPD"; mkdir -p "$UPD/OpenRCT2/bin" "$UPD/OpenRCT2/data/sequence"
 cp "$BIN" "$UPD/OpenRCT2/bin/openrct2"
+[ -f "$BIN_O2" ] && cp "$BIN_O2" "$UPD/OpenRCT2/bin/openrct2-o2"
 cp "$STAGE/OpenRCT2/data/sequence/Amiga.parkseq" "$UPD/OpenRCT2/data/sequence/"
 cp "$HERE/OpenRCT2" "$UPD/OpenRCT2/OpenRCT2"
 cp "$HERE/OpenRCT2-launcher.info" "$UPD/OpenRCT2/OpenRCT2.info"

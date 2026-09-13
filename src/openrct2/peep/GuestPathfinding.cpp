@@ -10,6 +10,8 @@
 #include "GuestPathfinding.h"
 
 #include "../Diagnostic.h"
+#include "../config/Config.h"
+#include "../platform/AmigaTrace.h"
 #include "../GameState.h"
 #include "../core/Guard.hpp"
 #include "../entity/Guest.h"
@@ -1221,6 +1223,12 @@ namespace OpenRCT2::PathFinding
      *
      *  rct2: 0x0069A5F0
      */
+    // trace profile (AmigaOS): [0] CalculateNextDestination calls, [1] its microseconds, [2] edge searches, [3] tiles checked
+    uint32_t gPathStat[8] = {}; // [4] searches that exhausted their tile budget, [5] tiles checked by those,
+                                // [6] ChooseDirection calls whose (tile, goal, junction limit) was seen within 8 ticks, [7] calls
+    static uint32_t sRecentKeys[1024];
+    static uint32_t sRecentTicks[1024];
+
     Direction ChooseDirection(
         const TileCoordsXYZ& loc, const TileCoordsXYZ& goal, Peep& peep, bool ignoreForeignQueues, RideId queueRideIndex)
     {
@@ -1233,10 +1241,27 @@ namespace OpenRCT2::PathFinding
 
         // The max number of thin junctions searched - a per-search-path limit.
         state.maxJunctions = PeepPathfindGetMaxNumberJunctions(peep);
+#ifdef __amigaos__
+        {
+            // trace experiment: would a short-lived cache of search results hit?
+            const uint32_t key = (static_cast<uint32_t>(loc.x) * 73856093u) ^ (static_cast<uint32_t>(loc.y) * 19349663u)
+                ^ (static_cast<uint32_t>(loc.z) * 83492791u) ^ (static_cast<uint32_t>(goal.x) * 2654435761u)
+                ^ (static_cast<uint32_t>(goal.y) * 40503u) ^ (static_cast<uint32_t>(goal.z) * 97u)
+                ^ (static_cast<uint32_t>(state.maxJunctions) * 7u) ^ (ignoreForeignQueues ? 0x5555u : 0u)
+                ^ (queueRideIndex.ToUnderlying() * 131u);
+            const uint32_t tick = getGameState().currentTicks;
+            const uint32_t slot = key & 1023;
+            gPathStat[7]++;
+            if (sRecentKeys[slot] == key && tick - sRecentTicks[slot] <= 8)
+                gPathStat[6]++;
+            sRecentKeys[slot] = key;
+            sRecentTicks[slot] = tick;
+        }
+#endif
 
         /* The max number of tiles to check - a whole-search limit.
          * Mainly to limit the performance impact of the path finding. */
-        int32_t maxTilesChecked = (peep.is<Staff>()) ? 50000 : 15000;
+        int32_t maxTilesChecked = (peep.is<Staff>()) ? 50000 : std::max(500, Config::Get().general.pathfindTileBudget);
 
         LogPathfinding(&peep, "Choose direction for goal %d,%d,%d from %d,%d,%d", goal.x, goal.y, goal.z, loc.x, loc.y, loc.z);
 
@@ -1455,6 +1480,13 @@ namespace OpenRCT2::PathFinding
                 PeepPathfindHeuristicSearch(
                     state, { loc.x, loc.y, height }, goal, peep, firstTileElement, inPatrolArea, 0, &score, testEdge,
                     &endJunctions, endJunctionList, endDirectionList, &endXYZ, &endSteps);
+                gPathStat[2]++;
+                gPathStat[3] += static_cast<uint32_t>(maxTilesChecked / numEdges - state.countTilesChecked);
+                if (state.countTilesChecked <= 0)
+                {
+                    gPathStat[4]++;
+                    gPathStat[5] += static_cast<uint32_t>(maxTilesChecked / numEdges);
+                }
 
                 if constexpr (kLogPathfinding)
                 {
@@ -1875,6 +1907,17 @@ namespace OpenRCT2::PathFinding
     int32_t CalculateNextDestination(Guest& peep)
     {
         LogPathfinding(&peep, "Starting CalculateNextDestination");
+#ifdef __amigaos__
+        struct PathTimer
+        {
+            unsigned t0 = amiga_ticks_us();
+            ~PathTimer()
+            {
+                gPathStat[0]++;
+                gPathStat[1] += amiga_ticks_us() - t0;
+            }
+        } pathTimer;
+#endif
 
         if (peep.getNextIsSurface())
         {

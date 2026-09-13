@@ -274,8 +274,13 @@ namespace OpenRCT2::Config
 #ifdef __amigaos__
             // Transparent bars cost a full-width viewport paint under each of them on every scrolled frame.
             model->solidWindows = reader->GetBoolean("solid_windows", true);
+            // Guest path searches that cannot reach their goal run into the 15000-tile budget; in a park with 1500
+            // guests those two-per-tick searches were 80% of the whole simulation on a 68k. They return a best-effort
+            // direction either way; a smaller budget only changes that fallback. 15000 restores PC behaviour.
+            model->pathfindTileBudget = reader->GetInt32("pathfind_tile_budget", 4000);
 #else
             model->solidWindows = reader->GetBoolean("solid_windows", false);
+            model->pathfindTileBudget = reader->GetInt32("pathfind_tile_budget", 15000);
 #endif
 
             model->invisibleRides = reader->GetBoolean("invisible_rides", false);
@@ -376,6 +381,7 @@ namespace OpenRCT2::Config
         writer->WriteBoolean("transparent_screenshot", model->transparentScreenshot);
         writer->WriteBoolean("transparent_water", model->transparentWater);
         writer->WriteBoolean("solid_windows", model->solidWindows);
+        writer->WriteInt32("pathfind_tile_budget", model->pathfindTileBudget);
         writer->WriteBoolean("invisible_rides", model->invisibleRides);
         writer->WriteBoolean("invisible_vehicles", model->invisibleVehicles);
         writer->WriteBoolean("invisible_trees", model->invisibleTrees);

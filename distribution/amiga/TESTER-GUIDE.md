@@ -1,6 +1,6 @@
 # OpenRCT2 on AmigaOS 3.2 (68k) — tester guide
 
-*Build: test12. This is an early, unfinished port. You are testing it — thank you.*
+*Build: test13. This is an early, unfinished port. You are testing it — thank you.*
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This build is a
 big-endian port of the upstream C++20 engine to 68k AmigaOS, with an Intuition/RTG display
@@ -51,6 +51,22 @@ Windows and the two bars are drawn opaque on the Amiga (`solid_windows = true` i
 The PC version treats every window as transparent, so the landscape underneath every open window and
 both bars was painted again on every scrolled frame; that cost more than half of the scrolling frame
 rate. Set `solid_windows = false` if you prefer the transparent look.
+
+## 2e. The second program file
+
+`bin/openrct2-o2` is the same program compiled for smaller code (-O2 instead of -O3). On real
+68060 and 68080 CPUs with their small caches it may run faster; on a PiStorm or an emulator it
+should make no difference. To try it, rename `bin/openrct2` to `bin/openrct2-o3` and
+`bin/openrct2-o2` to `bin/openrct2`, then compare the fps counter in the same spot of the same park.
+
+## 2f. Big parks and guest path finding
+
+With more than a few hundred guests the simulation itself becomes the limit: guests that cannot
+find a route to their goal within the game's junction limit run a search of up to 15,000 tiles on
+the PC, and on a 68k two such searches per tick were 80% of the whole simulation. This build limits
+those searches to 4,000 tiles (`pathfind_tile_budget` in `user/config.ini`); a search that reaches
+its goal is unaffected, only the fallback direction of a failed search can differ. Set it to 15000
+for exact PC behaviour, or lower (2000) if a big park still runs in slow motion.
 
 ## 3. Install the game
 

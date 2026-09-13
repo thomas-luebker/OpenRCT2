@@ -11,6 +11,7 @@
 #include "platform/AmigaTrace.h"
 #include "core/String.hpp"
 #include "entity/Peep.h"
+#include "peep/GuestPathfinding.h"
 #include "platform/Platform.h"
 
 #include "Game.h"
@@ -397,6 +398,15 @@ namespace OpenRCT2
                 for (int st = 0; st < 32; st++)
                     gPeepStateUs[st] = gPeepStateN[st] = 0;
                 AMIGA_TRACE(line.c_str());
+                AMIGA_TRACE((std::string("tick: pathfind: ") + std::to_string(PathFinding::gPathStat[0]) + " destinations in "
+                             + std::to_string(PathFinding::gPathStat[1] / 1000) + " ms, " + std::to_string(PathFinding::gPathStat[2])
+                             + " edge searches, " + std::to_string(PathFinding::gPathStat[3]) + " tiles checked; "
+                             + std::to_string(PathFinding::gPathStat[4]) + " searches exhausted their budget with "
+                             + std::to_string(PathFinding::gPathStat[5]) + " tiles; " + std::to_string(PathFinding::gPathStat[6]) + " of "
+                             + std::to_string(PathFinding::gPathStat[7]) + " direction choices repeat a recent (tile, goal)")
+                                .c_str());
+                for (auto& v : PathFinding::gPathStat)
+                    v = 0;
             }
         }
 #endif
