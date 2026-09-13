@@ -640,6 +640,7 @@ static constexpr float kWindowScrollLocations[][2] = {
         w.onDraw(copy);
         gWindowDrawStat[EnumValue(w.classification)].ms += Platform::GetTicks() - tDraw;
         gWindowDrawStat[EnumValue(w.classification)].calls++;
+        gWindowDrawStat[EnumValue(w.classification)].pixels += static_cast<uint32_t>(copy.width) * static_cast<uint32_t>(copy.height);
     }
 
     bool isToolActive(WindowClass cls)

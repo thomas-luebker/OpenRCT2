@@ -29,6 +29,7 @@ namespace OpenRCT2
     {
         uint32_t ms;
         uint32_t calls;
+        uint32_t pixels; // clip area summed, to tell a full redraw from a small one
     };
     extern WindowDrawStat gWindowDrawStat[256];
 

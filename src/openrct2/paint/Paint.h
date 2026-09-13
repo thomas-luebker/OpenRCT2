@@ -238,6 +238,8 @@ extern PaintSession gPaintSession;
 // 2128 px (a tile stack of the maximum possible height) makes an 480 px viewport walk 81 rows per column, while
 // a real park rarely needs more than 30.
 extern int32_t gPaintMaxTileHeight;
+constexpr int32_t kPaintHeightRegions = 64; // 16x16-tile regions; covers maps up to 1024 tiles
+extern uint16_t gPaintRegionMaxHeight[kPaintHeightRegions][kPaintHeightRegions];
 void PaintRecomputeMaxTileHeight();
 
 

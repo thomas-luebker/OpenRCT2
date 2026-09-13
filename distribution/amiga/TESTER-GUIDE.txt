@@ -1,7 +1,7 @@
 OPENRCT2 ON AMIGAOS 3.2 (68K) -- TESTER GUIDE
 =============================================
 
-Build: test11. This is an early, unfinished port. You are testing it -- thank
+Build: test12. This is an early, unfinished port. You are testing it -- thank
 you.
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This

@@ -129,7 +129,7 @@ public:
             {
                 // the four window classes that cost the most drawing time in this period
                 std::string line = "gfx: window draw ms/calls by class:";
-                for (int n = 0; n < 4; n++)
+                for (int n = 0; n < 8; n++)
                 {
                     int best = -1;
                     for (int c = 0; c < 256; c++)
@@ -138,7 +138,8 @@ public:
                     if (best < 0)
                         break;
                     line += " " + std::to_string(best) + ":" + std::to_string(gWindowDrawStat[best].ms) + "/"
-                        + std::to_string(gWindowDrawStat[best].calls);
+                        + std::to_string(gWindowDrawStat[best].calls) + "/"
+                        + std::to_string(gWindowDrawStat[best].pixels / std::max<uint32_t>(1, gWindowDrawStat[best].calls)) + "px";
                     gWindowDrawStat[best].calls = 0;
                 }
                 for (auto& st : gWindowDrawStat)

@@ -13,18 +13,27 @@
 /* libnix reads this at startup and swaps to a stack of this size; the CLI default is 4 KB. */
 unsigned long __stack = 8UL * 1024UL * 1024UL;
 
-void amiga_sleep_ms(unsigned ms)
-{
-    /* Delay() works in 1/50 s ticks; never busy-wait, never pass 0 for a non-zero request. */
-    ULONG ticks = (ms + 19) / 20;
-    if (ticks == 0 && ms != 0)
-        ticks = 1;
-    if (ticks != 0)
-        Delay(ticks);
-}
-
 static struct MsgPort* s_timerPort = NULL;
 static struct timerequest* s_timerReq = NULL;
+unsigned amiga_ticks_ms(void);
+
+void amiga_sleep_ms(unsigned ms)
+{
+    /* Delay() only knows 1/50 s ticks, so a 5 ms wait cost 20 ms and the frame loop could never reach its 40 Hz tick
+     * rate; timer.device UNIT_MICROHZ waits exactly as long as asked. The request is the one opened for GetSysTime,
+     * which never keeps it busy (single-threaded, synchronous use only). */
+    if (amiga_ticks_ms() == 0 || s_timerReq == NULL)
+    {
+        Delay((ms + 19) / 20 > 0 ? (ms + 19) / 20 : 1);
+        return;
+    }
+    s_timerReq->tr_node.io_Command = TR_ADDREQUEST;
+    /* The frame loop asks for "the rest of the 25 ms tick", truncated to whole ms: a request for 0 ms means "less
+     * than a millisecond", and returning at once would spin the loop thousands of times per frame. */
+    s_timerReq->tr_time.tv_secs = ms / 1000;
+    s_timerReq->tr_time.tv_micro = ms == 0 ? 500 : (ms % 1000) * 1000;
+    DoIO((struct IORequest*)s_timerReq);
+}
 
 struct timerequest* amiga_timer_request(void)
 {

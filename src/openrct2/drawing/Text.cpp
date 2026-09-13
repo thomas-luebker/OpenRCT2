@@ -15,6 +15,7 @@
 #include "../localisation/Formatting.h"
 #include "../localisation/Language.h"
 #include "Drawing.String.h"
+#include "RenderTarget.h"
 
 using namespace OpenRCT2;
 using namespace OpenRCT2::Drawing;
@@ -56,6 +57,12 @@ public:
         const utf8* buffer = Buffer.data();
         for (int32_t line = 0; line < LineCount; ++line)
         {
+#ifdef __amigaos__
+            // Lines below the render target cannot show and nothing after them depends on them (lines above it are
+            // still walked because their colour codes carry into the visible ones).
+            if (lineCoords.y >= rt.y + rt.height)
+                break;
+#endif
             drawText(rt, lineCoords, buffer, tempPaint);
             tempPaint.colour = OpenRCT2::Drawing::kColourNull;
             buffer = GetStringEnd(buffer) + 1;
@@ -106,6 +113,10 @@ void drawText(RenderTarget& rt, const ScreenCoordsXY& coords, StringId format, c
 
 void drawText(RenderTarget& rt, const ScreenCoordsXY& coords, u8string_view string, TextPaint textPaint)
 {
+#ifdef __amigaos__
+    if (coords.y >= rt.y + rt.height)
+        return; // entirely below the render target: no measuring, no colour state to carry forward
+#endif
     auto noFormatting = textPaint.flags.has(TextPaintFlag::noFormatting);
     int32_t width = getStringWidth(string, textPaint.fontStyle, noFormatting);
 

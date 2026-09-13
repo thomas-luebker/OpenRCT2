@@ -1,6 +1,6 @@
 # OpenRCT2 on AmigaOS 3.2 (68k) — tester guide
 
-*Build: test11. This is an early, unfinished port. You are testing it — thank you.*
+*Build: test12. This is an early, unfinished port. You are testing it — thank you.*
 
 OpenRCT2 is the open-source re-implementation of RollerCoaster Tycoon 2. This build is a
 big-endian port of the upstream C++20 engine to 68k AmigaOS, with an Intuition/RTG display

@@ -340,8 +340,15 @@ void X8DrawingEngine::OnDrawDirtyBlock(int32_t, int32_t, int32_t, int32_t)
 
 void X8DrawingEngine::ConfigureDirtyGrid()
 {
+#ifdef __amigaos__
+    // Smaller blocks: a walking guest then repaints 64x64 px (3 tile columns) instead of 128x128 (5 columns, twice the
+    // rows), and the tile walk behind every viewport paint is the most expensive thing a 68k does per frame.
+    const auto blockWidth = 1u << 6;
+    const auto blockHeight = 1u << 6;
+#else
     const auto blockWidth = 1u << 7;
     const auto blockHeight = 1u << 7;
+#endif
 
     _invalidationGrid.reset(_width, _height, blockWidth, blockHeight);
 }

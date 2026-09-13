@@ -41,20 +41,30 @@ using namespace OpenRCT2::Numerics;
 
 
 int32_t gPaintMaxTileHeight = 2040;
+// Maximum tile height per 16x16-tile region (z units = pixels); the column walk only needs the regions it crosses.
+uint16_t gPaintRegionMaxHeight[kPaintHeightRegions][kPaintHeightRegions] = {};
 
 void PaintRecomputeMaxTileHeight()
 {
     int32_t maxHeight = 0;
+    for (auto& row : gPaintRegionMaxHeight)
+        for (auto& v : row)
+            v = 0;
     TileElementIterator it;
     TileElementIteratorBegin(&it);
     do
     {
         const auto* element = it.element;
-        maxHeight = std::max(maxHeight, static_cast<int32_t>(element->getClearanceZ()));
+        int32_t h = element->getClearanceZ();
         if (element->getType() == TileElementType::surface)
         {
-            maxHeight = std::max(maxHeight, static_cast<int32_t>(element->asSurface()->getWaterHeight()));
+            h = std::max(h, static_cast<int32_t>(element->asSurface()->getWaterHeight()));
         }
+        maxHeight = std::max(maxHeight, h);
+        const int32_t rx = std::min<int32_t>(it.x >> 4, kPaintHeightRegions - 1);
+        const int32_t ry = std::min<int32_t>(it.y >> 4, kPaintHeightRegions - 1);
+        if (h > gPaintRegionMaxHeight[rx][ry])
+            gPaintRegionMaxHeight[rx][ry] = static_cast<uint16_t>(h);
     } while (TileElementIteratorNext(&it));
     gPaintMaxTileHeight = maxHeight;
     AMIGA_TRACE((std::string("paint: max tile height in this map ") + std::to_string(maxHeight) + " px").c_str());
@@ -309,9 +319,28 @@ void PaintSessionGenerateRotate(PaintSession& session)
     mapTile = mapTile.toTileStart();
 
 #ifdef __amigaos__
-    // Rows below the viewport that can still reach into it: bounded by the tallest thing in the park (plus sprite
-    // overhang and entities floating above their tile) instead of the theoretical maximum. Halves the tile walk.
-    const int32_t allowance = std::min<int32_t>(2128, gPaintMaxTileHeight + 128);
+    // Rows below the viewport that can still reach into it: bounded by the tallest thing along this column (per
+    // 16x16-tile region, plus sprite overhang) instead of the theoretical maximum. Cuts the tile walk by half or more.
+    constexpr CoordsXY nextVerticalTileEarly = CoordsXY{ 32, 32 }.rotate(direction);
+    int32_t colMax = 0;
+    {
+        const int32_t fullRows = (session.rt.WorldHeight() + std::min<int32_t>(2128, gPaintMaxTileHeight + 128)) >> 5;
+        CoordsXY p = mapTile;
+        for (int32_t row = 0; row <= fullRows; row += 8)
+        {
+            // the column and its neighbours to the sides (the adjacent tiles painted per row lie within one tile)
+            const int32_t rx = (p.x >> 5) >> 4, ry = (p.y >> 5) >> 4;
+            for (int32_t dx = -1; dx <= 1; dx++)
+                for (int32_t dy = -1; dy <= 1; dy++)
+                {
+                    const int32_t cx = rx + dx, cy = ry + dy;
+                    if (cx >= 0 && cy >= 0 && cx < kPaintHeightRegions && cy < kPaintHeightRegions)
+                        colMax = std::max<int32_t>(colMax, gPaintRegionMaxHeight[cx][cy]);
+                }
+            p += nextVerticalTileEarly * 8;
+        }
+    }
+    const int32_t allowance = std::min<int32_t>(2128, colMax + 128);
     uint16_t numVerticalTiles = static_cast<uint16_t>((session.rt.WorldHeight() + allowance) >> 5);
 #else
     uint16_t numVerticalTiles = (session.rt.WorldHeight() + 2128) >> 5;

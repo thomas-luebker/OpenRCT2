@@ -203,6 +203,12 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
     {
         gPaintMaxTileHeight = maxHeight; // something taller than the last full scan was built or loaded
     }
+    {
+        const int32_t rx = std::min<int32_t>((session.MapPosition.x >> 5) >> 4, kPaintHeightRegions - 1);
+        const int32_t ry = std::min<int32_t>((session.MapPosition.y >> 5) >> 4, kPaintHeightRegions - 1);
+        if (rx >= 0 && ry >= 0 && maxHeight > gPaintRegionMaxHeight[rx][ry])
+            gPaintRegionMaxHeight[rx][ry] = static_cast<uint16_t>(maxHeight);
+    }
 
     if (screenMinY - (maxHeight + 32) >= session.rt.WorldY() + session.rt.WorldHeight())
         return;
